@@ -292,7 +292,7 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
           <div class="track-h"><b>① Gemini로 만들기</b><span class="tag">무료 API 키</span></div>
           <div class="keybox" id="gBox">
             <input type="password" id="gKey" placeholder="내 Gemini API 키 붙여넣기 (AIza…)" autocomplete="off" spellcheck="false" aria-label="Gemini API 키">
-            <select id="gModel" aria-label="Gemini 모델"><option value="gemini-3.8-flash">3.8 Flash (추천)</option><option value="gemini-3.5-flash-lite">3.5 Flash-Lite (빠름)</option><option value="gemini-flash-latest">Flash 최신</option></select>
+            <select id="gModel" aria-label="Gemini 모델"><option value="gemini-3.5-flash-lite">3.5 Flash-Lite (빠름·추천)</option><option value="gemini-3.8-flash">3.8 Flash (꼼꼼함·조금 느림)</option><option value="gemini-flash-latest">Flash 최신</option></select>
           </div>
           <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
             <label class="hint" style="cursor:pointer;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="gSave" checked> 이 기기(브라우저)에 키 저장</label>
@@ -1434,7 +1434,7 @@ $('#fixToAns').addEventListener('click', ()=>{ $('#answer').value=$('#fixed').va
 let sample = null, ctrl = null, lastRaw = '', raf = 0, lastEngine = 'gemini';
 const IN_CLAUDE = !!(window.claude && window.claude.use);   // 클로드 화면 안이면 Claude, 일반 웹사이트면 Gemini
 const WEB_URL = '';   // GitHub Pages 주소 (예: https://아이디.github.io/ai-gyomusil/)
-let GM = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest'];
+let GM = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
 const GKEY = 'gyomusil.gemini.key', GMOD = 'gyomusil.gemini.model';   // 이 브라우저에만 저장 (선생님이 켠 경우)
 const ls = { get(k){ try{ return localStorage.getItem(k) || ''; }catch(e){ return ''; } }, set(k, v){ try{ v ? localStorage.setItem(k, v) : localStorage.removeItem(k); }catch(e){} } };
 let gChecked = '';   // 모델 목록을 확인한 키
@@ -1454,35 +1454,44 @@ async function geminiModels(key, quiet){
   const ver = n => parseFloat((n.match(/gemini-([\d.]+)/) || [])[1] || '0');
   const stable = ok.filter(n => /\d/.test(n)).sort((a, b) => ver(b) - ver(a) || (/lite/.test(a) - /lite/.test(b)));
   const flash = stable.filter(n => !/lite/.test(n)), lite = stable.filter(n => /lite/.test(n));
-  const list = [...flash.slice(0, 2), ...lite.slice(0, 1), ...ok.filter(n => /latest/.test(n))].filter((v, i, a) => v && a.indexOf(v) === i);
+  const list = [...lite.slice(0, 1), ...flash.slice(0, 2), ...ok.filter(n => /latest/.test(n))].filter((v, i, a) => v && a.indexOf(v) === i);
   if (!list.length){ $('#gState').textContent = '✓ 키는 맞지만 이 키로 쓸 수 있는 Flash 모델을 찾지 못했어요.'; return []; }
   GM = list; gChecked = key;
   const sel = $('#gModel'), prev = ls.get(GMOD) || sel.value;
   sel.innerHTML = '';
   list.forEach((n, i) => { const o = document.createElement('option'); o.value = n;
-    o.textContent = (n === 'gemini-flash-latest' ? 'Gemini Flash 최신' : n === 'gemini-flash-lite-latest' ? 'Gemini Flash-Lite 최신' : n.replace(/^gemini-/, 'Gemini ').replace(/-flash-lite/, ' Flash-Lite').replace(/-flash/, ' Flash')) + (i === 0 ? ' (추천)' : /lite/.test(n) ? ' (빠름)' : '');
+    o.textContent = (n === 'gemini-flash-latest' ? 'Gemini Flash 최신' : n === 'gemini-flash-lite-latest' ? 'Gemini Flash-Lite 최신' : n.replace(/^gemini-/, 'Gemini ').replace(/-flash-lite/, ' Flash-Lite').replace(/-flash/, ' Flash')) + (/lite/.test(n) ? ' (빠름·추천)' : /latest/.test(n) ? '' : ' (꼼꼼함·조금 느림)');
     sel.appendChild(o); });
   sel.value = list.includes(prev) ? prev : list[0];
   $('#gState').textContent = `✓ 키 확인됨 · 쓸 수 있는 모델 ${list.length}개`;
   return list;
 }
 const gErr = (code, message, text) => Object.assign(new Error(message || code), { code, text });
-const noThink = new Set();   // 생각 단계 설정을 거절한 모델
+// 속도: Gemini 3.x는 답을 쓰기 전 '생각(thinking)' 단계를 길게 해서 느림 → 모델이 허용하는 가장 낮은 단계부터 시도
+const THINK = ['minimal', 'low', null];
+const thinkAt = {};   // 모델별로 받아들여진 생각 단계 위치
+const FIRST_WAIT = 20000;   // 첫 글자가 이 시간 안에 안 오면 더 빠른 모델로 바꿈
 async function geminiOnce(model, key, prompt, opts){
   let res;
-  // 속도: 3.x 모델은 기본으로 '생각(thinking)'을 길게 해서 느림 → 생각 수준을 낮춤
-  const gc = { maxOutputTokens: 32768 };
-  if (!noThink.has(model)) gc.thinkingConfig = { thinkingLevel: 'low' };
+  const ti = thinkAt[model] || 0, level = THINK[ti];
+  const gc = { maxOutputTokens: 32768, temperature: 0.7 };
+  if (level) gc.thinkingConfig = { thinkingLevel: level };
+  // 멈추기 버튼 + 첫 글자 대기 시간을 함께 처리
+  const ac = new AbortController(); let slow = false, gotFirst = false;
+  const onStop = () => ac.abort(); if (opts.signal){ if (opts.signal.aborted) ac.abort(); else opts.signal.addEventListener('abort', onStop, { once:true }); }
+  const watch = opts.noWatch ? 0 : setTimeout(() => { if (!gotFirst){ slow = true; ac.abort(); } }, FIRST_WAIT);
+  const done = () => { clearTimeout(watch); if (opts.signal) opts.signal.removeEventListener('abort', onStop); };
   try{
     res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
-      method:'POST', signal: opts.signal,
+      method:'POST', signal: ac.signal,
       headers:{ 'Content-Type':'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({ contents:[{ role:'user', parts:[{ text: prompt }] }], generationConfig: gc }) });
-  }catch(e){ throw gErr(e && e.name === 'AbortError' ? 'cancelled' : (IN_CLAUDE ? 'blocked_here' : 'net')); }
+  }catch(e){ done(); throw gErr(slow ? 'slow' : e && e.name === 'AbortError' ? 'cancelled' : (IN_CLAUDE ? 'blocked_here' : 'net')); }
   if (!res.ok){
+    done();
     let raw = ''; try{ raw = await res.text(); }catch(_){}
     let msg = ''; try{ msg = JSON.parse(raw).error.message || ''; }catch(_){ msg = raw.slice(0, 200); }
-    if (gc.thinkingConfig && res.status === 400 && /think/i.test(msg)){ noThink.add(model); return geminiOnce(model, key, prompt, opts); }
+    if (level && res.status === 400 && /think|level|budget/i.test(msg)){ thinkAt[model] = ti + 1; return geminiOnce(model, key, prompt, opts); }
     if (/API[_ ]?key|API_KEY_INVALID|PERMISSION_DENIED.*key/i.test(msg + raw) && !/model/i.test(msg)) throw gErr('bad_key', msg);
     if (res.status === 429) throw gErr('rate_limited', msg);
     if (res.status === 404 || /model|not found|not available|no longer|new users|not supported/i.test(msg)) throw gErr('bad_model', msg);
@@ -1496,7 +1505,7 @@ async function geminiOnce(model, key, prompt, opts){
     let j; try{ j = JSON.parse(line.slice(5)); }catch(_){ return; }
     const c = (j.candidates || [])[0] || {};
     const delta = ((c.content && c.content.parts) || []).filter(x => !x.thought && x.text).map(x => x.text).join('');
-    if (delta){ text += delta; opts.onText && opts.onText({ text, delta }); }
+    if (delta){ gotFirst = true; clearTimeout(watch); text += delta; opts.onText && opts.onText({ text, delta, model }); }
     if (c.finishReason === 'MAX_TOKENS') truncated = true;
     if (/SAFETY|PROHIBITED|BLOCKLIST/.test(c.finishReason || '') || (j.promptFeedback && j.promptFeedback.blockReason)) blocked = true;
   };
@@ -1507,7 +1516,8 @@ async function geminiOnce(model, key, prompt, opts){
       let i; while ((i = buf.indexOf('\n')) >= 0){ eat(buf.slice(0, i)); buf = buf.slice(i + 1); }
     }
     eat(buf);
-  }catch(e){ throw gErr(e && e.name === 'AbortError' ? 'cancelled' : 'net', '', text); }
+  }catch(e){ done(); throw gErr(slow ? 'slow' : e && e.name === 'AbortError' ? 'cancelled' : 'net', '', text); }
+  done();
   if (!text) throw gErr(blocked ? 'refused' : 'empty_completion');
   return { text, truncated, model };
 }
@@ -1518,7 +1528,17 @@ async function gemini(prompt, opts){
   let last;
   for (const m of order){   // 이 키로 못 쓰는 모델이면 다음 모델로 자동 전환
     try{ const r = await geminiOnce(m, key, prompt, opts); if (m !== first){ $('#gModel').value = m; toast(`${first}을(를) 쓸 수 없어 ${m}(으)로 만들었어요.`); } return r; }
-    catch(e){ last = e; if (e.code !== 'bad_model') throw e; }
+    catch(e){
+      last = e;
+      if (e.code === 'slow'){   // 첫 글자가 늦으면 가장 빠른 모델로 한 번 더 (이번엔 기다림)
+        const fast = GM.find(n => /lite/.test(n) && n !== m);
+        if (!fast) return geminiOnce(m, key, prompt, Object.assign({}, opts, { noWatch:true }));
+        toast(`${m}의 응답이 늦어 더 빠른 ${fast}(으)로 바꿔 다시 만들어요.`);
+        $('#gModel').value = fast;
+        return geminiOnce(fast, key, prompt, Object.assign({}, opts, { noWatch:true }));
+      }
+      if (e.code !== 'bad_model') throw e;
+    }
   }
   throw last;
 }
@@ -1527,6 +1547,7 @@ const ERR = {
   bad_key:'Gemini 키가 맞지 않아요. AI Studio에서 복사한 키를 다시 붙여넣어 주세요.',
   bad_model:'고른 Gemini 모델을 이 키로 쓸 수 없어요. 다른 모델을 골라 주세요.',
   net:'Gemini에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.',
+  slow:'Gemini 응답이 너무 늦어요. 잠시 뒤 다시 누르거나 Claude로 만들어 보세요.',
   blocked_here:'클로드 화면 안에서는 Gemini를 쓸 수 없어요. 웹사이트 주소로 열어 주세요.',
   not_granted:'Claude 사용을 허용하지 않아 이 화면에서는 만들 수 없어요. 복사 버튼으로 다른 AI에서 써 주세요.',
   rate_limited:'요청이 많아요(무료 사용량 초과일 수 있어요). 1분쯤 뒤 다시 누르거나 다른 모델을 골라 주세요.',
@@ -1559,6 +1580,8 @@ async function ask(engine){
   const card = $('#resultCard'); card.hidden = false;
   $('#resTitle').textContent = t.name + ' 결과';
   $('#resStatus').className='status'; $('#resStatus').textContent = engine === 'claude' ? 'Claude가 생각하는 중… (처음 한 번은 사용 허용 창이 떠요)' : 'Gemini가 생각하는 중…';
+  const t0 = Date.now(), who = engine === 'claude' ? 'Claude' : 'Gemini';
+  clearInterval(ask._tick); ask._tick = setInterval(()=>{ if (!lastRaw) $('#resStatus').textContent = `${who}가 생각하는 중… ${Math.round((Date.now()-t0)/1000)}초`; }, 1000);
   $('#resBody').innerHTML=''; lastRaw=''; tlpBlock='';
   setBusy(true);
   card.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto':'smooth', block:'start'});
@@ -1583,7 +1606,7 @@ async function ask(engine){
     if (e && e.code==='cancelled'){ st.textContent='멈췄어요.'; }
     else { st.className='status err'; st.textContent = (e && ERR[e.code]) || ('만들지 못했어요. ' + ((e && e.message && e.message !== e.code) ? '(' + e.message + ')' : '잠시 뒤 다시 시도해 주세요.')); if (e && e.code === 'bad_model' && e.message) st.textContent += ' (' + e.message + ')'; }
     if (e && e.code==='not_granted'){ $('#askC').disabled = true; }
-  }finally{ setBusy(false); ctrl=null; }
+  }finally{ clearInterval(ask._tick); setBusy(false); ctrl=null; }
 }
 $('#askG').addEventListener('click', () => ask('gemini'));
 $('#askC').addEventListener('click', () => ask('claude'));
