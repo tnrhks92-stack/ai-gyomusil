@@ -340,7 +340,7 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
     <span class="label">한글 파일</span>
     <div class="sec-h" style="margin-top:14px"><h2 style="margin:0">운영 계획 HWPX 만들기</h2><span id="hwpTpl"></span></div>
     <p class="hint" id="planState" style="margin:4px 0 0">평가 계획(1~4쪽): 아직 담지 않았어요 — [평가 계획] 탭에서 만들고 담으면 함께 들어가요.</p>
-    <p class="lead">결과마다 <b>이 주차를 한글 표에 담기</b>를 누르면 여기에 쌓여요. 다 담은 뒤 한 번에 학교 양식(교수학습-평가 방법 표)으로 받으세요. 새로고침하면 담은 내용이 지워져요.</p>
+    <p class="lead">학교 운영 계획 한글 파일 <b>하나</b>에 두 부분이 같이 들어가요. <b>평가 계획</b> 탭에서 1~4쪽을 담고, <b>교수학습-평가 방법</b> 탭에서 주차마다 담은 뒤 어느 탭에서든 한 번에 받으세요. 새로고침하면 담은 내용이 지워져요.</p>
     <div class="myform">
       <div class="drop" id="formDrop">
         <p><b>내 학교 양식(.hwpx)</b>을 여기로 끌어다 놓거나 버튼을 눌러 고르세요.</p>
@@ -862,6 +862,67 @@ const weeksFor = term => myForm ? myForm.weeks.map(w=>w.label) : (term==='2학�
 const WEEKS = ['3.2.~3.6.','3.16.~3.20.','3.23.~3.27.','3.30.~4.3.','4.6.~4.10.','4.13.~4.17.','4.20.~4.24.','4.27.~5.1.','5.4.~5.8.','5.11.~5.15.','5.18.~5.22.','5.25.~5.29.','6.1.~6.5.','6.8.~6.12.','6.15.~6.19.','6.22.~6.26.','6.29.~7.3.','7.6.~7.10.','7.13.~7.17.','7.20.~7.21.'];
 const TLP_LABELS = ['핵심 아이디어','핵심 개념','핵심(탐구)질문','수행 지시어','학생 맞춤형 개별화 전략','피드백 전략','최소 성취수준 미도달 예방지도','형성평가'];
 const TASKS = [
+ { id:'plan', name:'평가 계획', title:'평가 계획 작성 (운영 계획 1~4쪽)', lead:'학교 운영 계획 양식의 [평가 계획] 부분(평가 방향, 평가 개요, 성취도, 수행평가 세부 계획과 채점 기준)을 만들어요. 과목·성취기준은 2022 개정 교육과정 원문에서 고르고, 결과는 교수학습-평가 방법과 함께 한 한글 파일로 받아요.',
+   fields:[
+    {k:'grade',l:'학년',t:'select',o:['고등학교 1학년','고등학교 2학년','고등학교 3학년'],v:'고등학교 1학년',after:()=>{ planFormLoad(); }},
+    {k:'group',l:'교과',t:'select',o:()=>CUR_GROUPS,v:'과학',after:v=>{ delete v.subject; delete v.doms; }},
+    {k:'subject',l:'과목',h:'(2022 개정)',t:'select',o:f=>subjectsOf(f.group).map(s=>s.n),v:f=>(subjectsOf(f.group)[0]||{}).n||'',after:v=>{ delete v.doms; }},
+    {k:'term',l:'학기',t:'select',o:['1학기','2학기'],v:'1학기',after:()=>{ planFormLoad(); }},
+    {k:'doms',l:'평가 범위 (영역)',h:'(체크하지 않으면 과목 전체)',full:true,t:'checks',o:f=>domainsOf(f).map(d=>({v:d.label,l:d.label})),v:''},
+    {k:'idea',l:'수행평가 아이디어',h:'(선택 — 비우면 AI가 과목에 맞게 제안)',full:true,ta:true,ph:'예) 1: 효소 실험 보고서 작성하기, 2: 유전 관련 쟁점 논술'},
+    {k:'elems',l:'평가요소 수',h:'(수행평가 1개당)',t:'select',o:['3개','4개','5개'],v:'4개'},
+    {k:'levels',l:'채점 수준',h:'(요소별 단계)',t:'select',o:['3단계','4단계','5단계'],v:()=>((planForm && planForm.rubricLevels) || 4)+'단계'},
+    {k:'ai',l:'AI 활용 범위',t:'select',o:['자료 조사·아이디어 단계에서만 허용','허용하지 않음','과정 전반 허용(활용 내역·출처 표기)'],v:'자료 조사·아이디어 단계에서만 허용'},
+   ],
+   build:f=>{
+     const sj = subjOf(f), sel = (f.doms||'').split(',').map(x=>x.trim()).filter(Boolean);
+     const doms = domainsOf(f).filter(d=>!sel.length || sel.includes(d.label));
+     const stds = sj.s.filter(x=>doms.some(d=>d.n===x[2])).map(x=>`[${x[0]}] ${x[1]}`).join('\n');
+     const n = (planForm && planForm.perfs) || 2, el = parseInt(f.elems)||4, lv = parseInt(f.levels)||4;
+     return `너는 ${f.grade} ${f.subject} 교사이고, 학교 「교수학습 및 평가 운영 계획」의 [평가 계획] 부분을 작성하고 있어.
+아래 정보로 '평가 방향'과 '수행평가 세부 계획(채점 기준 포함)'을 써 줘.
+
+[과목 정보]
+- 과목: ${f.subject} (2022 개정 교육과정), ${f.term}
+- 평가 범위 영역: ${doms.map(d=>d.label).join(', ')}
+- 성취기준 (이 목록의 코드와 문장만 사용):
+${stds}
+- 수행평가 개수: ${n}개 (학교 양식에 맞춰 정확히 ${n}개)
+- 수행평가 아이디어: ${f.idea || '정하지 않음 — 과목 특성과 성취기준에 맞게 제안'}
+- 채점 기준: 수행평가마다 평가요소 ${el}개, 요소마다 ${lv}단계, 수행평가 1개의 배점 합계 100점
+- AI 활용 범위: ${f.ai}
+
+[작성 규칙]
+- 평가 방향은 3문장(가~다). 이 과목 교육과정의 목표·교과 역량과 과정 중심·성장 중심 평가 방향을 반영하고 '~한다.'로 끝맺기
+- 영역명은 '내용+행동' 형태로 (예: 효소의 작용 실험 보고서 작성하기)
+- 성취기준은 위 목록에서 골라 코드와 문장을 그대로 옮기기 (새로 만들거나 바꾸지 말 것)
+- 수행 과제 흐름은 3~5단계, '1)' 번호
+- AI 활용은 위 범위에 맞게 허용·금지 행동을 구체적으로 2~3개
+- 채점 기준의 수행 특성은 관찰 가능한 행동으로 쓰고, 최하 수준은 부정어 대신 '~하려고 노력함'처럼 기술
+- 점수는 요소 배점에서 단계마다 내려가게, 단계 사이 간격은 일정하게
+- 학업성적관리규정에 따라 학교마다 다른 내용(결시 처리 등)은 쓰지 말 것
+
+[출력 형식] 아래 형식만 그대로, 다른 말 없이
+[평가 방향]
+가. (문장)
+나. (문장)
+다. (문장)
+[수행평가 1]
+영역명: (내용+행동)
+평가 유형: (보고서형, 논술형, 실험형, 발표형, 포트폴리오형 중 하나)
+성취기준:
+[코드] 문장
+수행 과제 흐름:
+1) ...
+AI 활용:
+1) ...
+채점 기준:
+* 평가요소 이름 (배점)
+- 점수 | 수행 특성
+유의 사항: 충분한 기회를 제공한 장기 결석, 자발적 미응시, 백지 제출 등의 학생은 0점 또는 차하점(최하점-1점) 처리한다.
+${n>1?`[수행평가 2]\n(같은 형식)\n`:''}### 확인 필요
+- (교사가 꼭 확인할 점, 없으면 '없음')`; }},
+
  { id:'tlp', name:'교수학습-평가 방법', title:'교수학습-평가 방법 작성', lead:'운영 계획의 [교수학습-평가 방법] 표 한 칸(차시)에 들어갈 내용을 만들어요. 과목·영역·성취기준·핵심 아이디어는 2022 개정 교육과정 원문(교육부 고시 제2022-33호)에서 고르고, 작성 항목과 표현은 대구 지역 고등학교 5곳의 2026학년도 운영 계획을 종합했어요.',
    fields:[
     {k:'grade',l:'학년',t:'select',o:['고등학교 1학년','고등학교 2학년','고등학교 3학년'],v:'고등학교 1학년'},
@@ -956,66 +1017,83 @@ ${stdText(f)}
 - 확실하지 않은 사실은 "확인 필요"라고 표시할 것
 - 한국어로, 표는 간결하게`},
 
- { id:'plan', name:'평가 계획', title:'평가 계획 작성 (운영 계획 1~4쪽)', lead:'학교 운영 계획 양식의 [평가 계획] 부분(평가 방향, 평가 개요, 성취도, 수행평가 세부 계획과 채점 기준)을 만들어요. 과목·성취기준은 2022 개정 교육과정 원문에서 고르고, 결과는 교수학습-평가 방법과 함께 한 한글 파일로 받아요.',
+ { id:'min', name:'최소 성취수준 보장', title:'최소 성취수준 보장지도 계획·보충 자료', lead:'고교학점제 최소 성취수준 보장지도(예방지도·보충지도) 계획서와, 미도달 위험 학생용 보충학습지(개념 정리·단계별 문항·정답과 해설)를 만들어요. 과목·성취기준은 2022 개정 교육과정 원문에서 골라요.',
    fields:[
-    {k:'grade',l:'학년',t:'select',o:['고등학교 1학년','고등학교 2학년','고등학교 3학년'],v:'고등학교 1학년',after:()=>{ planFormLoad(); }},
-    {k:'group',l:'교과',t:'select',o:()=>CUR_GROUPS,v:'과학',after:v=>{ delete v.subject; delete v.doms; }},
-    {k:'subject',l:'과목',h:'(2022 개정)',t:'select',o:f=>subjectsOf(f.group).map(s=>s.n),v:f=>(subjectsOf(f.group)[0]||{}).n||'',after:v=>{ delete v.doms; }},
-    {k:'term',l:'학기',t:'select',o:['1학기','2학기'],v:'1학기',after:()=>{ planFormLoad(); }},
-    {k:'doms',l:'평가 범위 (영역)',h:'(체크하지 않으면 과목 전체)',full:true,t:'checks',o:f=>domainsOf(f).map(d=>({v:d.label,l:d.label})),v:''},
-    {k:'idea',l:'수행평가 아이디어',h:'(선택 — 비우면 AI가 과목에 맞게 제안)',full:true,ta:true,ph:'예) 1: 효소 실험 보고서 작성하기, 2: 유전 관련 쟁점 논술'},
-    {k:'elems',l:'평가요소 수',h:'(수행평가 1개당)',t:'select',o:['3개','4개','5개'],v:'4개'},
-    {k:'levels',l:'채점 수준',h:'(요소별 단계)',t:'select',o:['3단계','4단계','5단계'],v:()=>((planForm && planForm.rubricLevels) || 4)+'단계'},
-    {k:'ai',l:'AI 활용 범위',t:'select',o:['자료 조사·아이디어 단계에서만 허용','허용하지 않음','과정 전반 허용(활용 내역·출처 표기)'],v:'자료 조사·아이디어 단계에서만 허용'},
+    {k:'grade',l:'학년',t:'select',o:['고등학교 1학년','고등학교 2학년','고등학교 3학년'],v:'고등학교 1학년'},
+    {k:'group',l:'교과',t:'select',o:()=>CUR_GROUPS,v:'과학',after:v=>{ delete v.subject; delete v.domain; delete v.stds; }},
+    {k:'subject',l:'과목',h:'(2022 개정)',t:'select',o:f=>subjectsOf(f.group).map(s=>s.n),v:f=>(subjectsOf(f.group)[0]||{}).n||'',after:v=>{ delete v.domain; delete v.stds; }},
+    {k:'term',l:'학기',t:'select',o:['1학기','2학기'],v:'1학기'},
+    {k:'out',l:'만들 것',t:'select',full:true,o:['보장지도 계획서','보충학습지 (개념 정리·문항·해설)','계획서 + 보충학습지'],v:'보장지도 계획서',after:()=>{}},
+    {k:'domain',l:'영역(대단원)',t:'select',full:true,o:f=>domainsOf(f).map(d=>d.label),v:f=>(domainsOf(f)[0]||{}).label||'',after:v=>{ delete v.stds; }},
+    {k:'stds',l:'성취기준',h:'(보충지도할 성취기준)',full:true,t:'checks',o:f=>stdsOf(f).map(s=>({v:s[0],l:'['+s[0]+'] '+s[1]})),v:f=>stdsOf(f).slice(0,2).map(s=>s[0]).join(', ')},
+    {k:'hours',l:'보충지도 차시',t:'select',o:['3차시','5차시','8차시','10차시'],v:'5차시',show:f=>!/^보충학습지/.test(f.out)},
+    {k:'who',l:'대상 학생 수준',t:'select',full:true,o:['기초 개념부터 다시 (미도달 위험 높음)','개념은 알지만 적용이 어려움','결석·학업 중단 위험 (출석 보충 포함)'],v:'기초 개념부터 다시 (미도달 위험 높음)'},
+    {k:'how',l:'운영 방식',h:'(선택)',t:'chips',full:true,o:['방과 후 대면','정규 수업 중 모둠','온라인 학습 병행','개별 과제·상담','멘토링(또래)'],v:'방과 후 대면, 개별 과제·상담',show:f=>!/^보충학습지/.test(f.out)},
    ],
    build:f=>{
-     const sj = subjOf(f), sel = (f.doms||'').split(',').map(x=>x.trim()).filter(Boolean);
-     const doms = domainsOf(f).filter(d=>!sel.length || sel.includes(d.label));
-     const stds = sj.s.filter(x=>doms.some(d=>d.n===x[2])).map(x=>`[${x[0]}] ${x[1]}`).join('\n');
-     const n = (planForm && planForm.perfs) || 2, el = parseInt(f.elems)||4, lv = parseInt(f.levels)||4;
-     return `너는 ${f.grade} ${f.subject} 교사이고, 학교 「교수학습 및 평가 운영 계획」의 [평가 계획] 부분을 작성하고 있어.
-아래 정보로 '평가 방향'과 '수행평가 세부 계획(채점 기준 포함)'을 써 줘.
+     const std = stdText(f) || '(성취기준을 하나 이상 고르세요)';
+     const plan = !/^보충학습지/.test(f.out), sheet = /보충학습지/.test(f.out);
+     let out = `너는 ${f.grade} ${f.subject} 교사이고, 고교학점제 '최소 성취수준 보장지도'를 준비하고 있어.
 
 [과목 정보]
 - 과목: ${f.subject} (2022 개정 교육과정), ${f.term}
-- 평가 범위 영역: ${doms.map(d=>d.label).join(', ')}
-- 성취기준 (이 목록의 코드와 문장만 사용):
-${stds}
-- 수행평가 개수: ${n}개 (학교 양식에 맞춰 정확히 ${n}개)
-- 수행평가 아이디어: ${f.idea || '정하지 않음 — 과목 특성과 성취기준에 맞게 제안'}
-- 채점 기준: 수행평가마다 평가요소 ${el}개, 요소마다 ${lv}단계, 수행평가 1개의 배점 합계 100점
-- AI 활용 범위: ${f.ai}
-
+- 영역: ${f.domain}
+- 대상 성취기준 (코드와 문장을 그대로 사용):
+${std}
+- 대상 학생: ${f.who}
+${plan ? `- 보충지도: ${f.hours}, 운영 방식: ${f.how || '학교 여건에 맞게'}\n` : ''}
 [작성 규칙]
-- 평가 방향은 3문장(가~다). 이 과목 교육과정의 목표·교과 역량과 과정 중심·성장 중심 평가 방향을 반영하고 '~한다.'로 끝맺기
-- 영역명은 '내용+행동' 형태로 (예: 효소의 작용 실험 보고서 작성하기)
-- 성취기준은 위 목록에서 골라 코드와 문장을 그대로 옮기기 (새로 만들거나 바꾸지 말 것)
-- 수행 과제 흐름은 3~5단계, '1)' 번호
-- AI 활용은 위 범위에 맞게 허용·금지 행동을 구체적으로 2~3개
-- 채점 기준의 수행 특성은 관찰 가능한 행동으로 쓰고, 최하 수준은 부정어 대신 '~하려고 노력함'처럼 기술
-- 점수는 요소 배점에서 단계마다 내려가게, 단계 사이 간격은 일정하게
-- 학업성적관리규정에 따라 학교마다 다른 내용(결시 처리 등)은 쓰지 말 것
-
-[출력 형식] 아래 형식만 그대로, 다른 말 없이
-[평가 방향]
-가. (문장)
-나. (문장)
-다. (문장)
-[수행평가 1]
-영역명: (내용+행동)
-평가 유형: (보고서형, 논술형, 실험형, 발표형, 포트폴리오형 중 하나)
-성취기준:
-[코드] 문장
-수행 과제 흐름:
-1) ...
-AI 활용:
-1) ...
-채점 기준:
-* 평가요소 이름 (배점)
-- 점수 | 수행 특성
-유의 사항: 충분한 기회를 제공한 장기 결석, 자발적 미응시, 백지 제출 등의 학생은 0점 또는 차하점(최하점-1점) 처리한다.
-${n>1?`[수행평가 2]\n(같은 형식)\n`:''}### 확인 필요
-- (교사가 꼭 확인할 점, 없으면 '없음')`; }},
+- 성취기준의 '최소한 할 수 있어야 하는 것'에 초점을 맞추고, 쉬운 말과 작은 단계로 쓰기
+- 미도달 판단 기준·보충지도 시수 등 학교 학업성적관리규정에 따라 다른 부분은 '학교 규정 확인'으로 표시
+- 학생을 낙인찍는 표현 대신 성장 중심 표현 쓰기
+- 성취수준(A~E) 진술은 한국교육과정평가원 성취수준 자료로 확인이 필요하다고 표시
+`;
+     if (plan) out += `
+[출력 1: 보장지도 계획서]
+### 1. 운영 개요
+| 항목 | 내용 |
+|---|---|
+| 과목 / 학기 | |
+| 대상 성취기준 | |
+| 미도달 판단 기준 | (예: 학업성취율 40% 미만 또는 출석률 3분의 2 미만 — 학교 규정 확인) |
+| 지도 기간 / 차시 | |
+| 운영 방식 | |
+### 2. 최소 성취수준(미도달 경계) 수행 특성
+- (성취기준별로 '이 정도는 할 수 있어야 한다'를 1~2줄)
+### 3. 예방지도 (정규 수업 중)
+| 시기 | 지도 방법 | 확인 방법 |
+|---|---|---|
+### 4. 보충지도 차시별 계획
+| 차시 | 성취기준 | 학습 내용 | 활동·자료 | 도달 확인 방법 |
+|---|---|---|---|---|
+(${f.hours} 모두)
+### 5. 이수 판단과 사후 관리
+- 
+### 6. 학생·학부모 안내 문구
+(3~4문장, 쉬운 말)
+`;
+     if (sheet) out += `
+[출력 ${plan ? 2 : 1}: 보충학습지] 학생에게 그대로 나눠 줄 수 있게
+### 보충학습지: (주제)
+#### 오늘의 목표
+- (할 수 있어야 하는 것 1~2개)
+#### 핵심 개념 정리
+(짧은 설명 + 빈칸 채우기 3~5개, 빈칸은 ( ① ) 형태)
+#### 1단계 기초 확인 (5문항)
+1. ...
+#### 2단계 적용 (3문항)
+1. ...
+#### 스스로 점검
+- [ ] (체크 항목 3개)
+#### 정답과 해설 (교사용)
+- 빈칸: ① ... ② ...
+- 1단계: (1) 정답 — 해설 (2) ...
+- 2단계: (1) 정답 — 해설 (2) ...
+`;
+     return out + `
+### 확인 필요
+- (교사가 확인할 점, 없으면 '없음')`;
+   }},
 
  { id:'sgb', name:'생기부 분석·면접', title:'생활기록부 분석과 면접 준비', lead:'생기부 PDF를 올리면 이 브라우저 안에서 개인정보를 가린 뒤, 교과 세특·창의적 체험활동·행동특성 및 종합의견을 요약하고 연계 활동을 제안하거나, 학생부를 근거로 한 예상 면접 질문을 만들어요.',
    fields:[
@@ -1136,8 +1214,8 @@ ${f.draft}
 ];
 
 
-let cur = store.get('tab', 'tlp');
-if (!TASKS.find(t=>t.id===cur)) cur = 'lesson';
+let cur = store.get('tab', 'plan');
+if (!TASKS.find(t=>t.id===cur)) cur = 'plan';
 const values = store.get('vals', {});
 
 /* tabs */
@@ -1224,7 +1302,7 @@ function render(){
   $('#hwpCard').hidden = !(t.id==='tlp' || t.id==='plan');
   $('#planCard').hidden = t.id!=='plan';
   $('#sgCard').hidden = t.id!=='sgb';
-  if (render._tab !== t.id){ $('#toHwp').hidden = true; render._tab = t.id; }
+  if (render._tab !== t.id){ if (render._tab) stashResult(render._tab); restoreResult(t.id); render._tab = t.id; }
   $('#toHwp').textContent = t.id==='plan' ? '평가 계획을 한글에 담기' : '이 주차를 한글 표에 담기';
   if (t.id==='plan') planFormLoad();
   $('#bTarget').textContent = t.id==='record' ? vals().bytes : '1500';
@@ -1569,6 +1647,48 @@ function pickPolished(text){
   const m = text.match(/###\s*다듬은 문장\s*\n([\s\S]*?)(\n###|$)/);
   return m ? m[1].replace(/^\s*[-*>]\s*/,'').trim() : '';
 }
+/* 탭마다 AI 결과를 따로 보관 (탭을 옮겨도 지워지지 않고, 그 탭으로 돌아오면 다시 보여요) */
+const resStash = {};
+function stashResult(id){
+  const body = $('#resBody'), frag = document.createDocumentFragment();
+  while (body.firstChild) frag.appendChild(body.firstChild);
+  resStash[id] = Object.assign(resStash[id] || {}, { hidden: $('#resultCard').hidden, title: $('#resTitle').textContent,
+    st: $('#resStatus').textContent, stc: $('#resStatus').className, toHwp: $('#toHwp').hidden, frag, raw: lastRaw, tlp: tlpBlock });
+}
+function restoreResult(id){
+  const body = $('#resBody'); body.innerHTML = '';
+  const s = resStash[id];
+  if (!s){ $('#resultCard').hidden = true; lastRaw = ''; tlpBlock = ''; $('#toHwp').hidden = true; return; }
+  $('#resultCard').hidden = s.hidden; $('#resTitle').textContent = s.title; $('#resStatus').textContent = s.st; $('#resStatus').className = s.stc;
+  $('#toHwp').hidden = s.toHwp; if (s.frag) body.appendChild(s.frag); s.frag = null; lastRaw = s.raw || ''; tlpBlock = s.tlp || '';
+  if (s.pending){ const pd = s.pending; delete s.pending; finishRender(id, pd); }
+}
+function finishRender(id, r){
+  const st = $('#resStatus'); st.className = 'status';
+  if (r.err){
+    const e = r.err;
+    if (e && e.text){ lastRaw = e.text; renderMd(lastRaw); }
+    if (e && e.code==='cancelled'){ st.textContent='멈췄어요.'; }
+    else { st.className='status err'; st.textContent = (e && ERR[e.code]) || ('만들지 못했어요. ' + ((e && e.message && e.message !== e.code) ? '(' + e.message + ')' : '잠시 뒤 다시 시도해 주세요.')); if (e && e.code === 'bad_model' && e.message) st.textContent += ' (' + e.message + ')'; }
+    if (e && e.code==='not_granted'){ $('#askC').disabled = true; }
+    return;
+  }
+  lastRaw = r.raw; renderMd(lastRaw);
+  st.textContent = r.truncated ? '답이 길어 중간에 끊겼어요. 필요하면 다시 만들어 주세요.' : '완성됐어요.';
+  if (id==='tlp' && !r.truncated) renderTlp(lastRaw);
+  if (id==='plan' && !r.truncated) renderPlan(lastRaw);
+  if (id==='sgb') renderSgb(lastRaw, r.truncated);
+  if (id==='min'){
+    const row = document.createElement('div'); row.className = 'row'; row.style.margin = '12px 0 0';
+    const pr = document.createElement('button'); pr.type = 'button'; pr.className = 'btn sm'; pr.textContent = '인쇄 (PDF로 저장)';
+    pr.addEventListener('click', ()=>{ try{ window.print(); }catch(e){ toast('이 화면에서는 인쇄를 열 수 없어요. [결과 복사]로 한글·워드에 붙여넣어 인쇄하세요.'); } });
+    row.appendChild(pr); $('#resBody').appendChild(row);
+  }
+  if (id==='record'){
+    const s = pickPolished(lastRaw);
+    if (s){ $('#answer').value = s; lintSrc='ans'; checkAnswer(); lint(); st.textContent='완성됐어요. 다듬은 문장을 아래 점검 칸에 넣었어요.'; }
+  }
+}
 async function ask(engine){
   if (cur==='sgb' && !sgState.text){ toast('먼저 생기부를 올려 주세요.'); $('#sgCard').scrollIntoView({behavior:'smooth', block:'start'}); return; }
   engine = engine === 'claude' || engine === 'gemini' ? engine : lastEngine; lastEngine = engine;
@@ -1576,37 +1696,33 @@ async function ask(engine){
   if (!run) return;
   if (ctrl) ctrl.abort();
   ctrl = new AbortController();
-  const t = task(), prompt = $('#prompt').value;
+  const t = task(), prompt = $('#prompt').value, myTab = t.id, mine = () => cur === myTab;
+  delete resStash[myTab];
   const card = $('#resultCard'); card.hidden = false;
   $('#resTitle').textContent = t.name + ' 결과';
   $('#resStatus').className='status'; $('#resStatus').textContent = engine === 'claude' ? 'Claude가 생각하는 중… (처음 한 번은 사용 허용 창이 떠요)' : 'Gemini가 생각하는 중…';
   const t0 = Date.now(), who = engine === 'claude' ? 'Claude' : 'Gemini';
-  clearInterval(ask._tick); ask._tick = setInterval(()=>{ if (!lastRaw) $('#resStatus').textContent = `${who}가 생각하는 중… ${Math.round((Date.now()-t0)/1000)}초`; }, 1000);
-  $('#resBody').innerHTML=''; lastRaw=''; tlpBlock='';
+  let raw = '';
+  clearInterval(ask._tick); ask._tick = setInterval(()=>{ if (!raw && mine()) $('#resStatus').textContent = `${who}가 생각하는 중… ${Math.round((Date.now()-t0)/1000)}초`; }, 1000);
+  $('#resBody').innerHTML=''; lastRaw=''; tlpBlock=''; $('#toHwp').hidden = true;
   setBusy(true);
   card.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto':'smooth', block:'start'});
+  let result;
   try{
     const r = await run(prompt, { signal: ctrl.signal, cache:false, onText:({text})=>{
+      raw = text; if (!mine()) return;
       lastRaw = text; $('#resStatus').textContent='작성하는 중…';
-      if (!raf) raf = requestAnimationFrame(()=>{ raf=0; renderMd(lastRaw); });
+      if (!raf) raf = requestAnimationFrame(()=>{ raf=0; if (mine()) renderMd(lastRaw); });
     }});
     if (raf){ cancelAnimationFrame(raf); raf=0; }
-    lastRaw = r.text; renderMd(lastRaw);
-    $('#resStatus').textContent = r.truncated ? '답이 길어 중간에 끊겼어요. 필요하면 다시 만들어 주세요.' : '완성됐어요.';
-    if (t.id==='tlp' && !r.truncated) renderTlp(lastRaw);
-    if (t.id==='plan' && !r.truncated) renderPlan(lastRaw);
-    if (t.id==='sgb') renderSgb(lastRaw, r.truncated);
-    if (t.id==='record'){
-      const s = pickPolished(lastRaw);
-      if (s){ $('#answer').value = s; lintSrc='ans'; checkAnswer(); lint(); $('#resStatus').textContent='완성됐어요. 다듬은 문장을 아래 점검 칸에 넣었어요.'; }
-    }
-  }catch(e){
-    if (e && e.text){ lastRaw=e.text; renderMd(lastRaw); }
-    const st=$('#resStatus');
-    if (e && e.code==='cancelled'){ st.textContent='멈췄어요.'; }
-    else { st.className='status err'; st.textContent = (e && ERR[e.code]) || ('만들지 못했어요. ' + ((e && e.message && e.message !== e.code) ? '(' + e.message + ')' : '잠시 뒤 다시 시도해 주세요.')); if (e && e.code === 'bad_model' && e.message) st.textContent += ' (' + e.message + ')'; }
-    if (e && e.code==='not_granted'){ $('#askC').disabled = true; }
-  }finally{ clearInterval(ask._tick); setBusy(false); ctrl=null; }
+    result = { raw: r.text, truncated: r.truncated };
+  }catch(e){ result = { err: e }; }
+  finally{ clearInterval(ask._tick); setBusy(false); ctrl=null; }
+  if (mine()) finishRender(myTab, result);
+  else {   // 다른 탭에 가 있는 동안 끝남 → 그 탭으로 돌아오면 보여 줌
+    resStash[myTab] = Object.assign(resStash[myTab] || {}, { hidden:false, title: t.name + ' 결과', st:'', stc:'status', toHwp:true, raw: result.raw || '', pending: result });
+    if (!result.err) toast(`[${t.name}] 결과가 완성됐어요. 그 탭으로 가면 보여요.`);
+  }
 }
 $('#askG').addEventListener('click', () => ask('gemini'));
 $('#askC').addEventListener('click', () => ask('claude'));
@@ -1887,9 +2003,11 @@ const tplIdFor = f => f.term==='2학기' ? 'tpl-s2-g23' : (((f.grade||'').match(
 const planIncluded = () => !!planDoc || planTouched;
 function syncShared(id, k, v){
   if (!['grade','group','subject','term'].includes(k)) return;
-  const o = id==='tlp' ? 'plan' : id==='plan' ? 'tlp' : null; if (!o) return;
-  const ov = values[o] ||= {}; ov[k] = v;
-  const fd = TASKS.find(x=>x.id===o).fields.find(x=>x.k===k); if (fd && fd.after) fd.after(ov);
+  const group = ['plan','tlp','min']; if (!group.includes(id)) return;
+  group.filter(o => o !== id).forEach(o => {
+    const ov = values[o] ||= {}; ov[k] = v;
+    const fd = TASKS.find(x=>x.id===o).fields.find(x=>x.k===k); if (fd && fd.after) fd.after(ov);
+  });
 }
 async function planFormLoad(){
   if (!window.JSZip) return;
