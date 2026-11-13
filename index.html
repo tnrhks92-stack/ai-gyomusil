@@ -145,6 +145,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .keybox{display:flex;flex-wrap:wrap;gap:8px}
 .keybox input,.keybox select{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper,var(--sheet));color:var(--ink);min-width:0}
 .keybox input{flex:1 1 200px}
+.fhead{grid-column:1/-1;margin:10px 0 -2px;padding:6px 10px;border-left:4px solid var(--ink);background:var(--sky-2);border-radius:4px;font-weight:700;font-size:14px}
 .pgrid{border-collapse:collapse;width:100%;font-size:13px;table-layout:auto}
 .pgrid td{border:1px solid var(--line);padding:6px 7px;vertical-align:middle;white-space:pre-wrap;min-width:48px;word-break:keep-all}
 .pgrid td.lab{background:var(--sky-2);font-weight:700;white-space:pre-wrap}
@@ -251,6 +252,18 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
 
   <div class="tabs" role="tablist" aria-label="업무 선택" id="tabs"></div>
 
+  <section class="card" id="formCard" hidden>
+    <span class="label">① 학교 양식</span>
+    <div class="sec-h" style="margin-top:14px"><h2 style="margin:0">먼저, 우리 학교 운영 계획 양식 올리기 <span class="hint" style="font-weight:400">(선택)</span></h2><span class="hint" id="formCur"></span></div>
+    <p class="lead">올린 양식의 주차(시기)와 평가 계획 표가 아래 작업에 바로 반영되고, 마지막에 그 양식 그대로 한글 파일로 받아요. 순서: <b>① 양식 올리기 → ② 아래에서 만들고 담기 → ③ 맨 아래에서 한글 파일 받기</b></p>
+      <div class="drop" id="formDrop">
+        <p><b>내 학교 양식(.hwpx)</b>을 여기로 끌어다 놓거나 버튼을 눌러 고르세요.</p>
+        <div class="row"><label class="btn" for="formFile" role="button" tabindex="0">파일 고르기</label><input type="file" id="formFile" accept=".hwpx,.hwp" hidden><button class="btn sm" id="formReset" type="button" hidden>기본 양식으로 되돌리기</button></div>
+      </div>
+      <p class="hint" id="formStatus" style="margin:8px 0 12px">올리지 않으면 기본 양식(송현여고 2026학년도)으로 만들어요. 올린 양식은 이 화면에만 잠시 있고 어디에도 저장되지 않아요.</p>
+      <label class="hint" id="clearWrap" hidden style="margin:0 0 12px;cursor:pointer"><input type="checkbox" id="clearOthers"> 담지 않은 주차에 적혀 있는 기존 내용 지우기 <span id="clearNote"></span></label>
+  </section>
+
   <section class="card" id="sgCard" hidden>
     <span class="label">생기부 올리기</span>
     <div class="sec-h" style="margin-top:14px"><h2 style="margin:0">학교생활기록부 올리기</h2><span class="hint">🔒 이 브라우저 안에서만 처리</span></div>
@@ -354,17 +367,9 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
     <div class="sec-h" style="margin-top:14px"><h2 style="margin:0">운영 계획 HWPX 만들기</h2><span id="hwpTpl"></span></div>
     <p class="hint" id="planState" style="margin:4px 0 0">평가 계획(1~4쪽): 아직 담지 않았어요 — [평가 계획] 탭에서 만들고 담으면 함께 들어가요.</p>
     <p class="lead">학교 운영 계획 한글 파일 <b>하나</b>에 두 부분이 같이 들어가요. <b>평가 계획</b> 탭에서 1~4쪽을 담고, <b>교수학습-평가 방법</b> 탭에서 주차마다 담은 뒤 어느 탭에서든 한 번에 받으세요. 새로고침하면 담은 내용이 지워져요.</p>
-    <div class="myform">
-      <div class="drop" id="formDrop">
-        <p><b>내 학교 양식(.hwpx)</b>을 여기로 끌어다 놓거나 버튼을 눌러 고르세요.</p>
-        <div class="row"><label class="btn" for="formFile" role="button" tabindex="0">파일 고르기</label><input type="file" id="formFile" accept=".hwpx,.hwp" hidden><button class="btn sm" id="formReset" type="button" hidden>기본 양식으로 되돌리기</button></div>
-      </div>
-      <p class="hint" id="formStatus" style="margin:8px 0 12px">올리지 않으면 기본 양식(송현여고 2026학년도)으로 만들어요. 올린 양식은 이 화면에만 잠시 있고 어디에도 저장되지 않아요.</p>
-      <label class="hint" id="clearWrap" hidden style="margin:0 0 12px;cursor:pointer"><input type="checkbox" id="clearOthers"> 담지 않은 주차에 적혀 있는 기존 내용 지우기 <span id="clearNote"></span></label>
-    </div>
     <div class="tbl-wrap"><table class="find"><thead><tr><th>시기</th><th>시수</th><th>단원명(주제)</th><th>평가 유형</th><th></th></tr></thead><tbody id="basket"></tbody></table></div>
     <div class="row" style="margin-top:12px"><button class="btn primary" id="hwpBtn" type="button">한글 파일(HWPX) 받기</button><span class="hint" id="hwpHint"></span></div>
-    <p class="note">웹사이트 버전은 .hwpx로 바로, 클로드 화면에서는 .zip 안에 .hwpx로 저장돼요. 담지 않은 주차와 나머지 항목(평가 개요, 성취수준 등)은 빈 양식 그대로예요. 양식이 .hwp라면 한글에서 [다른 이름으로 저장 → 파일 형식: HWPX]로 바꿔 올려 주세요.</p>
+    <p class="note">웹사이트 버전은 .hwpx로 바로, 클로드 화면에서는 .zip 안에 .hwpx로 저장돼요. 맨 위 [① 학교 양식]에서 올린 양식으로 만들어요(안 올리면 기본 양식). 양식이 .hwp라면 한글에서 [다른 이름으로 저장 → 파일 형식: HWPX]로 바꿔 올려 주세요.</p>
   </section>
 
   <section class="checks" id="checks">
@@ -878,37 +883,37 @@ const TASKS = [
  { id:'plan', name:'평가 계획', title:'평가 계획 작성 (운영 계획 1~4쪽)', lead:'학교 운영 계획 양식의 [평가 계획] 부분(평가 방향, 평가 개요, 성취도, 수행평가 세부 계획과 채점 기준)을 만들어요. 과목·성취기준은 2022 개정 교육과정 원문에서 고르고, 결과는 교수학습-평가 방법과 함께 한 한글 파일로 받아요.',
    fields:[
     {k:'grade',l:'학년',t:'select',o:['고등학교 1학년','고등학교 2학년','고등학교 3학년'],v:'고등학교 1학년',after:()=>{ planFormLoad(); }},
-    {k:'group',l:'교과',t:'select',o:()=>CUR_GROUPS,v:'과학',after:v=>{ delete v.subject; delete v.doms; }},
-    {k:'subject',l:'과목',h:'(2022 개정)',t:'select',o:f=>subjectsOf(f.group).map(s=>s.n),v:f=>(subjectsOf(f.group)[0]||{}).n||'',after:v=>{ delete v.doms; }},
+    {k:'group',l:'교과',t:'select',o:()=>CUR_GROUPS,v:'과학',after:v=>{ delete v.subject; [1,2,3,4].forEach(k=>delete v['p'+k+'d']); }},
+    {k:'subject',l:'과목',h:'(2022 개정)',t:'select',o:f=>subjectsOf(f.group).map(s=>s.n),v:f=>(subjectsOf(f.group)[0]||{}).n||'',after:v=>{ [1,2,3,4].forEach(k=>delete v['p'+k+'d']); }},
     {k:'term',l:'학기',t:'select',o:['1학기','2학기'],v:'1학기',after:()=>{ planFormLoad(); }},
-    {k:'doms',l:'평가 범위 (영역)',h:'(체크하지 않으면 과목 전체)',full:true,t:'checks',o:f=>domainsOf(f).map(d=>({v:d.label,l:d.label})),v:''},
-    {k:'idea',l:'수행평가 아이디어',h:'(선택 — 비우면 AI가 과목에 맞게 제안)',full:true,ta:true,ph:'예) 1: 효소 실험 보고서 작성하기, 2: 유전 관련 쟁점 논술'},
-    {k:'elems',l:'평가요소 수',h:'(수행평가 1개당)',t:'select',o:['3개','4개','5개'],v:'4개'},
-    {k:'levels',l:'채점 수준',h:'(요소별 단계)',t:'select',o:['3단계','4단계','5단계'],v:()=>((planForm && planForm.rubricLevels) || 4)+'단계'},
+    {k:'pn',l:'수행평가 개수',h:'(양식에 맞춰)',t:'select',o:['1개','2개','3개','4개'],v:()=>((planForm && planForm.perfs) || 2)+'개',after:()=>{ setTimeout(renderPlanCard, 0); }},
+    ...[1,2,3,4].flatMap(planPerfFields),
     {k:'ai',l:'AI 활용 범위',t:'select',o:['자료 조사·아이디어 단계에서만 허용','허용하지 않음','과정 전반 허용(활용 내역·출처 표기)'],v:'자료 조사·아이디어 단계에서만 허용'},
    ],
    build:f=>{
-     const sj = subjOf(f), sel = (f.doms||'').split(',').map(x=>x.trim()).filter(Boolean);
-     const doms = domainsOf(f).filter(d=>!sel.length || sel.includes(d.label));
-     const stds = sj.s.filter(x=>doms.some(d=>d.n===x[2])).map(x=>`[${x[0]}] ${x[1]}`).join('\n');
-     const n = (planForm && planForm.perfs) || 2, el = parseInt(f.elems)||4, lv = parseInt(f.levels)||4;
+     const n = pnOf(f), P = [1,2,3,4].slice(0, n).map(k => perfSpec(f, k));
+     const allDoms = [...new Set(P.flatMap(x => x.doms.map(d => d.label)))];
      return `너는 ${f.grade} ${f.subject} 교사이고, 학교 「교수학습 및 평가 운영 계획」의 [평가 계획] 부분을 작성하고 있어.
 아래 정보로 '평가 방향'과 '수행평가 세부 계획(채점 기준 포함)'을 써 줘.
 
 [과목 정보]
 - 과목: ${f.subject} (2022 개정 교육과정), ${f.term}
-- 평가 범위 영역: ${doms.map(d=>d.label).join(', ')}
-- 성취기준 (이 목록의 코드와 문장만 사용):
-${stds}
-- 수행평가 개수: ${n}개 (학교 양식에 맞춰 정확히 ${n}개)
-- 수행평가 아이디어: ${f.idea || '정하지 않음 — 과목 특성과 성취기준에 맞게 제안'}
-- 채점 기준: 수행평가마다 평가요소 ${el}개, 요소마다 ${lv}단계, 수행평가 1개의 배점 합계 100점
+- 평가 범위 영역(전체): ${allDoms.join(', ')}
+- 수행평가 개수: ${n}개 (정확히 ${n}개, 아래 조건을 수행평가마다 따로 지킬 것)
 - AI 활용 범위: ${f.ai}
+${P.map((x, i) => `
+[수행평가 ${i+1} 조건]
+- 평가 범위 영역: ${x.doms.map(d=>d.label).join(', ')}
+- 성취기준 (이 목록의 코드와 문장만 사용):
+${x.stds}
+- 아이디어: ${x.idea || '정하지 않음 — 이 범위의 성취기준에 맞게 제안'}
+- 채점 기준: 평가요소 ${x.el}개, 요소마다 ${x.lv}단계, 배점 합계 100점`).join('\n')}
 
 [작성 규칙]
 - 평가 방향은 3문장(가~다). 이 과목 교육과정의 목표·교과 역량과 과정 중심·성장 중심 평가 방향을 반영하고 '~한다.'로 끝맺기
 - 영역명은 '내용+행동' 형태로 (예: 효소의 작용 실험 보고서 작성하기)
-- 성취기준은 위 목록에서 골라 코드와 문장을 그대로 옮기기 (새로 만들거나 바꾸지 말 것)
+- 성취기준은 그 수행평가 조건의 목록에서 골라 코드와 문장을 그대로 옮기기 (새로 만들거나 바꾸지 말 것)
+- 평가요소 수와 단계 수는 수행평가마다 위 조건과 정확히 같게
 - 수행 과제 흐름은 3~5단계, '1)' 번호
 - AI 활용은 위 범위에 맞게 허용·금지 행동을 구체적으로 2~3개
 - 채점 기준의 수행 특성은 관찰 가능한 행동으로 쓰고, 최하 수준은 부정어 대신 '~하려고 노력함'처럼 기술
@@ -1285,6 +1290,7 @@ function render(){
   const V = vals();
   t.fields.forEach(f=>{
     if (f.show && !f.show(V)) return;
+    if (f.head){ const h = document.createElement('div'); h.className = 'fhead'; h.textContent = f.head; box.appendChild(h); }
     const wrap = document.createElement('div'); wrap.className = 'f' + (f.full?' full':'');
     const id = `in-${t.id}-${f.k}`;
     if (f.t==='checks'){
@@ -1337,6 +1343,8 @@ function render(){
   $('#hwpCard').hidden = !(t.id==='tlp' || t.id==='plan');
   $('#planCard').hidden = t.id!=='plan';
   $('#sgCard').hidden = t.id!=='sgb';
+  $('#formCard').hidden = !(t.id==='plan' || t.id==='tlp');
+  if (t.id==='plan' || t.id==='tlp'){ const fv = vals(); $('#formCur').textContent = myForm ? '지금 양식: ' + myForm.name : '지금 양식: 기본 (송현여고 ' + ({'tpl-g1':'1학기 1학년용','tpl-g23':'1학기 2·3학년용','tpl-s2-g23':'2학기 2·3학년용'})[tplIdFor(fv)] + ')'; }
   $('#ivCard').hidden = !(t.id==='sgb' && /면접/.test(vals().mode||''));
   if (render._tab !== t.id){ if (render._tab) stashResult(render._tab); restoreResult(t.id); render._tab = t.id; }
   $('#toHwp').textContent = t.id==='plan' ? '평가 계획을 한글에 담기' : '이 주차를 한글 표에 담기';
@@ -2117,6 +2125,22 @@ function renderSgb(text, truncated){
 }
 
 /* ---------- 평가 계획(양식 1~4쪽) ---------- */
+function pnOf(f){ return parseInt(f.pn) || (planForm && planForm.perfs) || 2; }
+function planPerfFields(k){
+  const sh = f => k <= pnOf(f);
+  return [
+    {k:'p'+k+'d', head:`수행평가 ${k}`, l:'평가 범위 (영역)', h:'(체크하지 않으면 과목 전체)', full:true, t:'checks', o:f=>domainsOf(f).map(d=>({v:d.label,l:d.label})), v:'', show:sh},
+    {k:'p'+k+'i', l:'아이디어', h:'(선택 — 비우면 AI가 제안)', full:true, ph: k===1 ? '예) 효소의 작용 실험 보고서 작성하기' : '예) 유전 관련 쟁점 논술하기', v:'', show:sh},
+    {k:'p'+k+'e', l:'평가요소 수', t:'select', o:['2개','3개','4개','5개'], v:'4개', show:sh},
+    {k:'p'+k+'l', l:'채점 수준', h:'(요소별 단계)', t:'select', o:['3단계','4단계','5단계'], v:()=>((planForm && planForm.rubricLevels) || 4)+'단계', show:sh},
+  ];
+}
+function perfSpec(f, k){
+  const sj = subjOf(f), sel = (f['p'+k+'d']||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const doms = domainsOf(f).filter(d=>!sel.length || sel.includes(d.label));
+  const codes = sj.s.filter(x=>doms.some(d=>d.n===x[2]));
+  return { doms, codes: codes.map(x=>x[0]), stds: codes.map(x=>`[${x[0]}] ${x[1]}`).join('\n'), idea: f['p'+k+'i'] || '', el: parseInt(f['p'+k+'e'])||4, lv: parseInt(f['p'+k+'l'])||4 };
+}
 let planForm = null, planEdits = { info:{}, overview:{} }, planLevel = 0, planEnglish = false, planDoc = null, planTouched = false, planLoading = null;
 const tplIdFor = f => f.term==='2학기' ? 'tpl-s2-g23' : (((f.grade||'').match(/(\d)학년/)||[])[1]==='1' ? 'tpl-g1' : 'tpl-g23');
 const planIncluded = () => !!planDoc || planTouched;
@@ -2206,20 +2230,23 @@ function renderPlanCard(){
     lab.append(cb, ' 5. 유의 사항의 영어듣기 평가 안내 상자 남기기 (영어 과목만)'); block('5. 유의 사항', lab);
   }
   const n = document.createElement('p'); n.className='hint';
-  n.textContent = `이 양식의 수행평가는 ${planForm.perfs}개, 채점기준표는 요소마다 ${planForm.rubricLevels}단계예요.${planForm.aiRow ? ' AI 활용 칸이 있어요.' : ''} 평가요소·단계 수가 달라도 채점기준표 행을 맞춰 새로 만들어요.`;
+  const pn = pnOf(vals('plan'));
+  n.textContent = `이 양식의 수행평가 칸은 ${planForm.perfs}개예요.${planForm.aiRow ? ' AI 활용 칸이 있어요.' : ''} 평가요소·단계 수는 수행평가마다 달라도 채점기준표 행을 맞춰 새로 만들어요.` + (pn > planForm.perfs ? ` ⚠ 수행평가를 ${pn}개로 골랐지만 양식 칸은 ${planForm.perfs}개라 ${planForm.perfs + 1}번째부터는 한글 파일에 들어가지 않아요 (양식에 칸을 늘린 뒤 올려 주세요).` : pn < planForm.perfs ? ` ⚠ 양식 칸은 ${planForm.perfs}개인데 ${pn}개만 만들어요. 남는 칸은 한글에서 지워 주세요.` : '') + ' 내년 양식이 바뀌면 맨 위 [① 학교 양식]에 새 양식을 올리면 이 표도 그 양식으로 바뀌어요.';
   box.appendChild(n);
 }
 function planAutoFill(){
   if (!planForm || !planForm.overview) return;
-  const f = vals('plan'), sj = subjOf(f), sel = (f.doms||'').split(',').map(x=>x.trim()).filter(Boolean);
-  const doms = domainsOf(f).filter(d=>!sel.length || sel.includes(d.label));
-  const codes = sj.s.filter(x=>doms.some(d=>d.n===x[2])).map(x=>x[0]);
-  const range = codes.length ? (codes.length > 1 ? `[${codes[0]}]~[${codes[codes.length-1]}]` : `[${codes[0]}]`) : '';
+  const f = vals('plan'), n = pnOf(f), P = [1,2,3,4].slice(0, n).map(k => perfSpec(f, k));
+  const rangeOf = codes => codes.length ? (codes.length > 1 ? `[${codes[0]}]~[${codes[codes.length-1]}]` : `[${codes[0]}]`) : '';
+  const all = perfSpec(Object.assign({}, f, { p9d:'' }), 9);   // 과목 전체 (정기시험 칸)
+  const rc = ovRow(/^횟수/), perfCols = rc ? rc.slice(1).filter(c=>/수행/.test(c.t)).map(c=>c.c) : [];
+  // 칸의 열이 어느 수행평가인지 (합친 칸이면 시작 열 기준)
+  const perfAt = c => { const k = perfCols.indexOf(c.c); return k >= 0 ? P[k] : null; };
   const rs = ovRow(/^교육과정/), ru = ovRow(/대단원/);
-  if (rs) rs.slice(1).forEach(c=>{ planEdits.overview[c.r+','+c.c] = range; });
-  if (ru) ru.slice(1).forEach(c=>{ planEdits.overview[c.r+','+c.c] = doms.map(d=>d.label).join('\n'); });
+  if (rs) rs.slice(1).forEach(c=>{ const x = perfAt(c); planEdits.overview[c.r+','+c.c] = rangeOf(x ? x.codes : all.codes); });
+  if (ru) ru.slice(1).forEach(c=>{ const x = perfAt(c); planEdits.overview[c.r+','+c.c] = (x ? x.doms : all.doms).map(d=>d.label).join('\n'); });
   if (planForm.info && planForm.info[1]){ const g = (f.grade.match(/(\d)학년/)||[])[1]; const c = planForm.info[1].find(c=>/학년/.test((planForm.info[0].find(h=>h.c===c.c)||{}).t||'')); if (c && g) planEdits.info[c.r+','+c.c] = g; }
-  planTouched = true; renderPlanCard(); renderBasket(); toast('성취기준 범위와 대단원을 채웠어요. 수행평가마다 범위가 다르면 칸을 눌러 고치세요.');
+  planTouched = true; renderPlanCard(); renderBasket(); toast('정기시험 칸은 과목 전체, 수행평가 칸은 수행평가마다 고른 범위로 성취기준·대단원을 채웠어요.');
 }
 function parsePlan(text){
   const out = { directions:[], perfs:[], check:'' };
@@ -2381,13 +2408,13 @@ async function loadForm(file){
     $('#formReset').hidden = false;
     $('#clearWrap').hidden = !info.filled; $('#clearOthers').checked = false;
     $('#clearNote').textContent = info.filled ? `(이미 내용이 있는 주차 ${info.filled}개 — 지난해 계획을 올렸다면 체크하세요)` : '';
-    resetWeek(); planFormLoad(); toast('양식을 읽었어요. 시기가 이 양식의 주차로 바뀌었어요.');
+    resetWeek(); planFormLoad(); render(); toast('양식을 읽었어요. 시기와 평가 계획 표가 이 양식으로 바뀌었어요.');
   }catch(err){ $('#formStatus').textContent = (err && err.message) || '양식을 읽지 못했어요.'; }
 }
 $('#formReset').addEventListener('click', ()=>{
   myForm = null; $('#formReset').hidden = true; $('#clearWrap').hidden = true;
   $('#formStatus').textContent = '기본 양식(송현여고 2026학년도)으로 되돌렸어요.';
-  resetWeek(); planFormLoad();
+  resetWeek(); planFormLoad(); render();
 });
 $('#resCopy').addEventListener('click', ()=>{
   if(!lastRaw){ toast('복사할 결과가 아직 없어요.'); return; }
