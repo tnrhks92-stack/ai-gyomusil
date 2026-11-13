@@ -214,6 +214,10 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
 .sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .sec-h h3{font-family:var(--display);font-weight:400;font-size:22px}
 .sec-h span{font-size:13px;color:var(--ink-3)}
+.dev{margin:14px 0 24px;padding:14px 16px;border:1.5px solid var(--soft-line);border-radius:12px;background:var(--sheet)}
+.dev p{margin:0}
+.dev-name{font-size:14px;color:var(--ink)}
+.dev-msg{margin-top:6px !important;font-size:13px;color:var(--ink-2);line-height:1.65}
 .foot{font-size:12.5px;color:var(--ink-3);text-align:left;border-top:1px solid var(--soft-line);padding-top:12px}
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;
@@ -255,7 +259,7 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
   <section class="card" id="formCard" hidden>
     <span class="label">① 학교 양식</span>
     <div class="sec-h" style="margin-top:14px"><h2 style="margin:0">먼저, 우리 학교 운영 계획 양식 올리기 <span class="hint" style="font-weight:400">(선택)</span></h2><span class="hint" id="formCur"></span></div>
-    <p class="lead">올린 양식의 주차(시기)와 평가 계획 표가 아래 작업에 바로 반영되고, 마지막에 그 양식 그대로 한글 파일로 받아요. 순서: <b>① 양식 올리기 → ② 아래에서 만들고 담기 → ③ 맨 아래에서 한글 파일 받기</b></p>
+    <p class="lead">올린 양식의 주차(시기)와 평가 계획 표가 아래 작업에 바로 반영되고, 마지막에 그 양식 그대로 한글 파일로 받아요. 양식은 한 번만 올리면 두 탭에 같이 쓰여요. 평가 계획과 교수학습 양식이 <b>따로</b>인 학교는 두 파일을 차례로 올리면 알아서 나눠 받아요. 순서: <b>① 양식 올리기 → ② 아래에서 만들고 담기 → ③ 맨 아래에서 한글 파일 받기</b></p>
       <div class="drop" id="formDrop">
         <p><b>내 학교 양식(.hwpx)</b>을 여기로 끌어다 놓거나 버튼을 눌러 고르세요.</p>
         <div class="row"><label class="btn" for="formFile" role="button" tabindex="0">파일 고르기</label><input type="file" id="formFile" accept=".hwpx,.hwp" hidden><button class="btn sm" id="formReset" type="button" hidden>기본 양식으로 되돌리기</button></div>
@@ -368,7 +372,7 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
     <p class="hint" id="planState" style="margin:4px 0 0">평가 계획(1~4쪽): 아직 담지 않았어요 — [평가 계획] 탭에서 만들고 담으면 함께 들어가요.</p>
     <p class="lead">학교 운영 계획 한글 파일 <b>하나</b>에 두 부분이 같이 들어가요. <b>평가 계획</b> 탭에서 1~4쪽을 담고, <b>교수학습-평가 방법</b> 탭에서 주차마다 담은 뒤 어느 탭에서든 한 번에 받으세요. 새로고침하면 담은 내용이 지워져요.</p>
     <div class="tbl-wrap"><table class="find"><thead><tr><th>시기</th><th>시수</th><th>단원명(주제)</th><th>평가 유형</th><th></th></tr></thead><tbody id="basket"></tbody></table></div>
-    <div class="row" style="margin-top:12px"><button class="btn primary" id="hwpBtn" type="button">한글 파일(HWPX) 받기</button><span class="hint" id="hwpHint"></span></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="hwpBtn" type="button">한글 파일(HWPX) 받기</button><button class="btn primary" id="hwpBtn2" type="button" hidden>교수학습-평가 방법 한글 파일 받기</button><span class="hint" id="hwpHint"></span></div>
     <p class="note">웹사이트 버전은 .hwpx로 바로, 클로드 화면에서는 .zip 안에 .hwpx로 저장돼요. 맨 위 [① 학교 양식]에서 올린 양식으로 만들어요(안 올리면 기본 양식). 양식이 .hwp라면 한글에서 [다른 이름으로 저장 → 파일 형식: HWPX]로 바꿔 올려 주세요.</p>
   </section>
 
@@ -421,6 +425,10 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
   </section>
 
   <p class="foot">AI 교무실은 로그인이 필요 없고, 입력한 내용은 어디에도 저장하지 않아요(창을 닫거나 새로고침하면 지워져요). Gemini 키만 선생님이 저장을 켜 두면 이 브라우저 안에 저장돼요. [바로 만들기]를 누를 때만 프롬프트가 고른 AI(Gemini 또는 Claude)로 전송돼요. 학생부는 「2026학년도 학교생활기록부 기재요령」에 따라 AI 생성 문장을 그대로 입력하지 말고, 관찰 메모와 대조한 뒤 직접 입력하세요. 소속 교육청 지침이 더 엄격하면 그 지침을 따르세요.</p>
+  <div class="dev" id="devBox">
+    <p class="dev-name">개발 · <b>송현여자고등학교 황수진</b></p>
+    <p class="dev-msg">AI 교무실은 선생님들의 학기 초 문서 부담을 덜고 싶어 만들었어요. 써 보시다가 불편한 점, 새로 있었으면 하는 기능, 우리 학교 양식이 잘 읽히지 않는 경우가 있으면 편하게 알려 주세요. 보내 주신 의견은 다음 판에 꼼꼼히 반영할게요.</p>
+  </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -847,7 +855,8 @@ const HWPX = (function(){
       if (!done && analyze(x)){ zip.file(n, fillSection(x, data)); done = true; }
       else if (data.subject){ const y = subj(x, data.subject); if (y !== x) zip.file(n, y); }
     }
-    if (!done) throw new Error('양식에서 표를 찾지 못했어요.');
+    if (!done && (data.rows || []).length) throw new Error('양식에서 교수학습-평가 방법 표를 찾지 못했어요.');
+    if (!done && !planDone) throw new Error('양식에서 채울 표를 찾지 못했어요.');
     if (zip.file('mimetype')) zip.file('mimetype', 'application/hwp+zip', { compression: 'STORE' });
     return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', mimeType: 'application/hwp+zip' });
   }
@@ -875,8 +884,11 @@ const stdsOf = f => { const dm = domainsOf(f).find(d=>d.label===f.domain); retur
 const ideasOf = f => subjOf(f).i || [];
 const stdText = f => { const all = subjOf(f).s; const sel = (f.stds||'').split(',').map(x=>x.trim()).filter(Boolean);
   return all.filter(s=>sel.includes(s[0])).map(s=>'['+s[0]+'] '+s[1]).join('\n'); };
-let myForm = null;   // {name, bytes, weeks:[{label,row}]} — 브라우저 메모리에만 둠
-const weeksFor = term => myForm ? myForm.weeks.map(w=>w.label) : (term==='2학기' ? WEEKS2 : WEEKS);
+// 올린 양식 (브라우저 메모리에만 둠). 한 파일에 두 부분이 다 있으면 plan·tlp가 같은 양식, 학교가 따로 쓰면 각각 다른 양식
+const forms = { plan:null, tlp:null };   // {name, size, bytes, weeks:[{label,row}], hasPlan, hasTlp, filled}
+const DEF_NAME = {'tpl-g1':'1학기 1학년용','tpl-g23':'1학기 2·3학년용','tpl-s2-g23':'2학기 2·3학년용'};
+const splitForms = () => forms.plan !== forms.tlp;   // 평가 계획과 교수학습을 다른 파일로 받는지
+const weeksFor = term => forms.tlp ? forms.tlp.weeks.map(w=>w.label) : (term==='2학기' ? WEEKS2 : WEEKS);
 const WEEKS = ['3.2.~3.6.','3.16.~3.20.','3.23.~3.27.','3.30.~4.3.','4.6.~4.10.','4.13.~4.17.','4.20.~4.24.','4.27.~5.1.','5.4.~5.8.','5.11.~5.15.','5.18.~5.22.','5.25.~5.29.','6.1.~6.5.','6.8.~6.12.','6.15.~6.19.','6.22.~6.26.','6.29.~7.3.','7.6.~7.10.','7.13.~7.17.','7.20.~7.21.'];
 const TLP_LABELS = ['핵심 아이디어','핵심 개념','핵심(탐구)질문','수행 지시어','학생 맞춤형 개별화 전략','피드백 전략','최소 성취수준 미도달 예방지도','형성평가'];
 const TASKS = [
@@ -1344,7 +1356,8 @@ function render(){
   $('#planCard').hidden = t.id!=='plan';
   $('#sgCard').hidden = t.id!=='sgb';
   $('#formCard').hidden = !(t.id==='plan' || t.id==='tlp');
-  if (t.id==='plan' || t.id==='tlp'){ const fv = vals(); $('#formCur').textContent = myForm ? '지금 양식: ' + myForm.name : '지금 양식: 기본 (송현여고 ' + ({'tpl-g1':'1학기 1학년용','tpl-g23':'1학기 2·3학년용','tpl-s2-g23':'2학기 2·3학년용'})[tplIdFor(fv)] + ')'; }
+  if (t.id==='plan' || t.id==='tlp'){ const fv = vals(), dn = '기본(송현여고 ' + DEF_NAME[tplIdFor(fv)] + ')';
+    $('#formCur').textContent = !splitForms() ? '지금 양식: ' + (forms.plan ? forms.plan.name : dn) : `평가 계획: ${forms.plan ? forms.plan.name : dn} · 교수학습: ${forms.tlp ? forms.tlp.name : dn}`; }
   $('#ivCard').hidden = !(t.id==='sgb' && /면접/.test(vals().mode||''));
   if (render._tab !== t.id){ if (render._tab) stashResult(render._tab); restoreResult(t.id); render._tab = t.id; }
   $('#toHwp').textContent = t.id==='plan' ? '평가 계획을 한글에 담기' : '이 주차를 한글 표에 담기';
@@ -2155,16 +2168,19 @@ function syncShared(id, k, v){
 async function planFormLoad(){
   if (!window.JSZip) return;
   const f = cur==='tlp' ? vals('tlp') : vals('plan');
-  const key = myForm ? 'my:' + myForm.name + ':' + myForm.bytes.length : tplIdFor(f);
+  const key = forms.plan ? 'my:' + forms.plan.name + ':' + forms.plan.size : tplIdFor(f);
   if (planForm && planForm.key === key) return planForm;
   if (planLoading && planLoading.key === key) return planLoading.p;
   const p = (async ()=>{
-    const zip = await JSZip.loadAsync(myForm ? myForm.bytes : b64bytes(key));
+    const zip = await JSZip.loadAsync(forms.plan ? forms.plan.bytes : b64bytes(key));
     const names = Object.keys(zip.files).filter(n=>/^Contents\/section\d+\.xml$/.test(n)).sort();
     let info = null;
     for (const n of names){ info = PLAN.inspect(await zip.file(n).async('string')); if (info) break; }
-    planForm = info ? Object.assign(info, { key, name: myForm ? myForm.name : ({'tpl-g1':'1학기 1학년용','tpl-g23':'1학기 2·3학년용','tpl-s2-g23':'2학기 2·3학년용'})[key] }) : { key, none:true };
-    planEdits = { info:{}, overview:{} }; planLevel = 0;
+    const prev = planForm;
+    planForm = info ? Object.assign(info, { key, name: forms.plan ? forms.plan.name : DEF_NAME[key] }) : { key, none:true };
+    // 표 모양이 같은 양식이면(같은 양식의 새 판 등) 고친 칸을 그대로 둠
+    const shape = F => F && F.overview ? JSON.stringify([F.overview.map(r=>r.map(c=>[c.r,c.c,c.cs,c.rs])), (F.info||[]).map(r=>r.length), F.levels.length]) : '';
+    if (!(prev && shape(prev) && shape(prev) === shape(planForm))){ if (prev && Object.keys(planEdits.overview).length + Object.keys(planEdits.info).length) toast('새 양식의 표 모양이 달라 평가 개요·기본 정보 표에서 고친 칸은 새 양식에서 다시 확인해 주세요.'); planEdits = { info:{}, overview:{} }; planLevel = 0; }
     planEnglish = vals('plan').group === '영어';
     renderPlanCard(); if (cur==='plan') build();
     return planForm;
@@ -2343,7 +2359,10 @@ function renderBasket(){
     : '평가 계획(1~4쪽): 아직 담지 않았어요 — [평가 계획] 탭에서 만들고 담으면 함께 들어가요.';
   $('#hwpHint').textContent = weeks.length ? `${weeks.length}개 주차 담김` : '';
   const g = vals().grade || '';
-  if (myForm){ $('#hwpTpl').textContent = '양식: ' + myForm.name; return; }
+  const split = splitForms(); $('#hwpBtn2').hidden = !split;
+  $('#hwpBtn').textContent = split ? '평가 계획 한글 파일 받기' : '한글 파일(HWPX) 받기';
+  if (split){ $('#hwpBtn').disabled = !planIncluded(); $('#hwpBtn2').disabled = !weeks.length; }
+  if (forms.plan || forms.tlp){ $('#hwpTpl').textContent = split ? `양식: 평가 계획 ${forms.plan ? forms.plan.name : '기본'} / 교수학습 ${forms.tlp ? forms.tlp.name : '기본'} (따로 받아요)` : '양식: ' + forms.plan.name; return; }
   $('#hwpTpl').textContent = term==='2학기' ? (/1학년/.test(g) ? '양식: 2학기 2·3학년용 (1학년 2학기 양식 없음)' : '양식: 2학기 2·3학년용') : (/1학년/.test(g) ? '양식: 1학기 1학년용' : '양식: 1학기 2·3학년용');
 }
 $('#toHwp').addEventListener('click', ()=>{
@@ -2356,21 +2375,28 @@ $('#toHwp').addEventListener('click', ()=>{
   renderBasket(); toast(`${f.week} 주차를 담았어요. 다른 주차도 만들어 담을 수 있어요.`);
 });
 function b64bytes(id){ const s=atob(document.getElementById(id).textContent.trim()); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
-$('#hwpBtn').addEventListener('click', async ()=>{
-  const f0 = vals(); const rows = weeksFor(f0.term).map(w=>basket[f0.term+'|'+w]).filter(Boolean); if(!rows.length && !planIncluded()) return;
+async function makeHwp(part, btn){   // part: 'both' | 'plan' | 'tlp'
+  const f0 = vals(); const rows0 = weeksFor(f0.term).map(w=>basket[f0.term+'|'+w]).filter(Boolean);
+  const rows = part === 'plan' ? [] : rows0, withPlan = part !== 'tlp' && planIncluded();
+  if (!rows.length && !withPlan){ toast(part === 'tlp' ? '먼저 주차를 담아 주세요.' : '먼저 평가 계획이나 주차를 담아 주세요.'); return; }
   if (!window.JSZip){ toast('파일 도구를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'); return; }
   if (IN_CLAUDE && !downloads){ toast('이 화면에서는 파일 저장을 쓸 수 없어요. 클로드에 로그인한 상태로 열거나 웹사이트 버전을 써 주세요.'); return; }
   const f = vals(); const g = (f.grade.match(/(\d)학년/)||[])[1] || '1';
-  const btn=$('#hwpBtn'); btn.disabled=true; btn.textContent='만드는 중…';
+  const F = part === 'plan' ? forms.plan : (forms.tlp || (part === 'both' ? forms.plan : null));
+  const label = btn.textContent; btn.disabled=true; btn.textContent='만드는 중…';
   try{
-    const tpl = myForm ? myForm.bytes : b64bytes(tplIdFor(f));
-    const info = myForm || await HWPX.inspect(JSZip, tpl);
-    const placed = rows.map(r=>{ const w = info.weeks.find(x=>x.label===r.week) || info.weeks.find(x=>x.label.startsWith(r.week)); return w ? Object.assign({}, r, {row:w.row, label:w.label}) : null; }).filter(Boolean);
-    if (rows.length && !placed.length) throw new Error('담은 주차가 양식의 시기와 맞지 않아요.');
-    if (planIncluded()) await planFormLoad();
-    const hwpx = await HWPX.build(JSZip, tpl, { subject: f.subject, rows: placed, clearOthers: myForm ? $('#clearOthers').checked : true, plan: planIncluded() ? planData(f) : null });
+    const tpl = F ? F.bytes : b64bytes(tplIdFor(f));
+    let placed = [];
+    if (rows.length){
+      const info = F && F.hasTlp ? F : await HWPX.inspect(JSZip, tpl);
+      placed = rows.map(r=>{ const w = info.weeks.find(x=>x.label===r.week) || info.weeks.find(x=>x.label.startsWith(r.week)); return w ? Object.assign({}, r, {row:w.row, label:w.label}) : null; }).filter(Boolean);
+      if (!placed.length) throw new Error('담은 주차가 양식의 시기와 맞지 않아요.');
+    }
+    if (withPlan) await planFormLoad();
+    const hwpx = await HWPX.build(JSZip, tpl, { subject: f.subject, rows: placed, clearOthers: F ? $('#clearOthers').checked : true, plan: withPlan ? planData(f) : null });
     const subj = f.subject.replace(/[\\/:*?"<>|]/g,'');
-    const name = myForm ? `${myForm.name.replace(/\.hwpx$/i,'')}_${subj}` : `2026학년도 ${f.term} ${g}학년 ${subj} 교수 학습 및 평가 운영 계획`;
+    const tail = part === 'plan' ? '_평가계획' : part === 'tlp' ? '_교수학습' : '';
+    const name = F ? `${F.name.replace(/\.hwpx$/i,'')}_${subj}${tail}` : `2026학년도 ${f.term} ${g}학년 ${subj} 교수 학습 및 평가 운영 계획${tail}`;
     if (downloads){   // 클로드 화면: .hwpx를 바로 저장할 수 없어 .zip으로 감쌈
       const outer = new JSZip(); outer.file(name + '.hwpx', hwpx);
       const zipBytes = await outer.generateAsync({type:'uint8array', compression:'STORE'});
@@ -2385,9 +2411,22 @@ $('#hwpBtn').addEventListener('click', async ()=>{
   }catch(e){
     const c = e && e.code;
     toast(c==='declined' ? '저장을 취소했어요.' : c==='rate_limited' ? '잠시 뒤 다시 눌러 주세요.' : '파일을 만들지 못했어요. ' + ((e && e.message) || ''));
-  }finally{ btn.disabled=false; btn.textContent='한글 파일(HWPX) 받기'; }
-});
-function resetWeek(){ const v = values.tlp; if (v){ delete v.week; delete v.date; } Object.keys(basket).forEach(k=>delete basket[k]); if (cur==='tlp') render(); renderBasket(); }
+  }finally{ btn.textContent=label; renderBasket(); }
+}
+$('#hwpBtn').addEventListener('click', ()=>makeHwp(splitForms() ? 'plan' : 'both', $('#hwpBtn')));
+$('#hwpBtn2').addEventListener('click', ()=>makeHwp('tlp', $('#hwpBtn2')));
+function resetWeek(){   // 양식의 주차가 바뀌면: 새 양식에도 있는 주차는 남기고, 없는 주차만 뺌
+  const v = values.tlp; let gone = 0;
+  Object.keys(basket).forEach(k=>{
+    const r = basket[k], list = weeksFor(r.term);
+    const hit = list.find(w=>w===r.week) || list.find(w=>w.startsWith(r.week) || r.week.startsWith(w));
+    delete basket[k];
+    if (hit){ r.week = hit; basket[r.term+'|'+hit] = r; } else gone++;
+  });
+  if (v && v.week && !weeksFor(v.term||'1학기').includes(v.week)){ delete v.week; delete v.date; }
+  if (cur==='tlp') render(); renderBasket();
+  return gone;
+}
 $('label[for="formFile"]').addEventListener('keydown', e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#formFile').click(); } });
 $('#formFile').addEventListener('change', e=>{ const file = e.target.files[0]; e.target.value=''; if (file) loadForm(file); });
 ['dragenter','dragover'].forEach(t=>$('#formDrop').addEventListener(t, e=>{ e.preventDefault(); $('#formDrop').classList.add('over'); }));
@@ -2397,24 +2436,42 @@ $('#formDrop').addEventListener('drop', e=>{ e.preventDefault(); $('#formDrop').
 async function loadForm(file){
   if (/\.hwp$/i.test(file.name)){ $('#formStatus').textContent = '.hwp 파일은 바로 읽을 수 없어요. 한글에서 [다른 이름으로 저장 → 파일 형식: HWPX]로 바꿔 올려 주세요.'; return; }
   if (!window.JSZip){ toast('파일 도구를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'); return; }
+  const same = F => F && F.name === file.name && F.size === file.size;
+  if (same(forms.plan) || same(forms.tlp)){ toast('이미 올린 양식이에요. 작업한 내용은 그대로예요.'); return; }
   try{
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const info = await HWPX.inspect(JSZip, bytes);
-    const seen = {}; info.weeks.forEach(w=>{ seen[w.label] = (seen[w.label]||0)+1; if (seen[w.label]>1) w.label += ` (${seen[w.label]})`; });
-    myForm = { name: file.name, bytes, weeks: info.weeks };
-    const C = info.cols, names = {date:'시기',hours:'시수',unit:'단원',idea:'핵심 아이디어',std:'성취기준',eval:'평가 유형',main:'수업 세부 방법'};
-    const found = Object.keys(names).filter(k=>C[k]!==undefined).map(k=>names[k]);
-    $('#formStatus').textContent = `「${file.name}」에서 주차 ${info.weeks.length}개(${info.weeks[0].label} ~ ${info.weeks[info.weeks.length-1].label})와 열 [${found.join(' · ')}]을 찾았어요. 시기 목록을 이 양식의 주차로 바꿨어요.`;
+    let tinfo = null; try{ tinfo = await HWPX.inspect(JSZip, bytes); }catch(e){}
+    let pinfo = null;
+    const zip = await JSZip.loadAsync(bytes);
+    for (const n of Object.keys(zip.files).filter(n=>/^Contents\/section\d+\.xml$/.test(n)).sort()){ pinfo = PLAN.inspect(await zip.file(n).async('string')); if (pinfo) break; }
+    if (!tinfo && !pinfo) throw new Error('이 파일에서 평가 계획 표(첫 칸이 \'평가 유형\'인 평가 개요 표)도, 교수학습-평가 방법 표(머리행에 시기·성취기준)도 찾지 못했어요.');
+    const F = { name: file.name, size: file.size, bytes, weeks: tinfo ? tinfo.weeks : [], hasTlp: !!tinfo, hasPlan: !!pinfo, filled: tinfo ? tinfo.filled : 0 };
+    if (tinfo){ const seen = {}; F.weeks.forEach(w=>{ seen[w.label] = (seen[w.label]||0)+1; if (seen[w.label]>1) w.label += ` (${seen[w.label]})`; }); }
+    if (F.hasPlan) forms.plan = F;
+    if (F.hasTlp) forms.tlp = F;
+    const msg = [];
+    if (F.hasPlan && F.hasTlp) msg.push(`평가 계획 표와 교수학습-평가 방법 표(주차 ${F.weeks.length}개)를 모두 찾았어요. 두 부분을 이 양식 한 파일로 만들어요.`);
+    else if (F.hasPlan) msg.push(`평가 계획 표만 있는 양식이에요. 평가 계획은 이 양식으로 따로 받고, 교수학습-평가 방법은 ${forms.tlp ? '「' + forms.tlp.name + '」' : '기본 양식'}으로 받아요. 교수학습 양식도 따로 있으면 여기에 한 번 더 올리세요.`);
+    else msg.push(`교수학습-평가 방법 표(주차 ${F.weeks.length}개: ${F.weeks[0].label} ~ ${F.weeks[F.weeks.length-1].label})만 있는 양식이에요. 교수학습은 이 양식으로 따로 받고, 평가 계획은 ${forms.plan ? '「' + forms.plan.name + '」' : '기본 양식'}으로 받아요.`);
+    let gone = 0;
+    if (F.hasTlp){
+      gone = resetWeek();
+      $('#clearWrap').hidden = !F.filled; $('#clearOthers').checked = false;
+      $('#clearNote').textContent = F.filled ? `(이미 내용이 있는 주차 ${F.filled}개 — 지난해 계획을 올렸다면 체크하세요)` : '';
+    }
+    if (planDoc && F.hasPlan) msg.push('앞에서 만든 평가 계획(AI 결과)은 그대로 있어요.');
+    if (gone) msg.push(`담아 둔 주차 중 ${gone}개는 새 양식에 같은 시기가 없어 빠졌어요.`);
+    $('#formStatus').textContent = `「${file.name}」 — ` + msg.join(' ');
     $('#formReset').hidden = false;
-    $('#clearWrap').hidden = !info.filled; $('#clearOthers').checked = false;
-    $('#clearNote').textContent = info.filled ? `(이미 내용이 있는 주차 ${info.filled}개 — 지난해 계획을 올렸다면 체크하세요)` : '';
-    resetWeek(); planFormLoad(); render(); toast('양식을 읽었어요. 시기와 평가 계획 표가 이 양식으로 바뀌었어요.');
+    await planFormLoad(); render(); renderBasket();
+    toast('양식을 읽었어요.');
   }catch(err){ $('#formStatus').textContent = (err && err.message) || '양식을 읽지 못했어요.'; }
 }
 $('#formReset').addEventListener('click', ()=>{
-  myForm = null; $('#formReset').hidden = true; $('#clearWrap').hidden = true;
-  $('#formStatus').textContent = '기본 양식(송현여고 2026학년도)으로 되돌렸어요.';
-  resetWeek(); planFormLoad(); render();
+  forms.plan = null; forms.tlp = null; $('#formReset').hidden = true; $('#clearWrap').hidden = true;
+  const gone = resetWeek();
+  $('#formStatus').textContent = '기본 양식(송현여고 2026학년도)으로 되돌렸어요. 만든 평가 계획은 그대로 있어요.' + (gone ? ` 담아 둔 주차 중 ${gone}개는 기본 양식에 같은 시기가 없어 빠졌어요.` : '');
+  planFormLoad().then(()=>{ render(); renderBasket(); });
 });
 $('#resCopy').addEventListener('click', ()=>{
   if(!lastRaw){ toast('복사할 결과가 아직 없어요.'); return; }
