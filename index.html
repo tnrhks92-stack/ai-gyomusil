@@ -273,6 +273,19 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
     </div>
   </section>
 
+  <section class="card" id="ivCard" hidden>
+    <span class="label">선택</span>
+    <div class="sec-h" style="margin-top:14px"><h2 style="margin:0">대학별 면접 후기·기출 반영 <span class="hint" style="font-weight:400">(선택)</span></h2><span class="hint">🔒 이 브라우저 안에서만 처리</span></div>
+    <p class="lead">면접 후기 사례집이나 대학별 기출 문제(PDF·txt)를 올리면, 고른 대학·학과와 관련된 부분만 뽑아 문항의 유형·깊이·말투를 비슷하게 맞춰요. 문항을 그대로 베끼지 않고 이 학생의 생기부에 맞게 바꿔요. 올리지 않아도 앱에 들어 있는 대학별 면접 정보(2027 모집요강 기준)로 만들어요.</p>
+    <div class="drop" id="ivDrop">
+      <p><b>후기·기출 자료</b>를 여기로 끌어다 놓거나 버튼을 눌러 고르세요. 여러 개를 올려도 돼요.</p>
+      <div class="row"><label class="btn" for="ivFile" role="button" tabindex="0">파일 고르기</label><input type="file" id="ivFile" accept=".pdf,.txt,application/pdf,text/plain" multiple hidden><button class="btn sm" type="button" id="ivClear" hidden>모두 빼기</button></div>
+    </div>
+    <label class="hint" style="cursor:pointer;display:inline-flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="ivUse" checked> 올린 자료를 문항 스타일에 반영</label>
+    <p class="status" id="ivStatus" role="status" aria-live="polite"></p>
+    <details id="ivPrev" hidden><summary class="hint" style="cursor:pointer">AI에 함께 보낼 발췌 보기</summary><pre id="ivPick" style="white-space:pre-wrap;font-size:12.5px;max-height:260px;overflow:auto;border:1px solid var(--soft-line);border-radius:8px;padding:8px;background:var(--sheet)"></pre></details>
+  </section>
+
   <section class="desk">
     <div class="card" id="formCard">
       <span class="label" id="formLabel">입력</span>
@@ -1101,43 +1114,65 @@ ${plan ? `- 보충지도: ${f.hours}, 운영 방식: ${f.how || '학교 여건�
     {k:'grade',l:'현재 학년',t:'select',o:['1학년','2학년','3학년'],v:'2학년'},
     {k:'major',l:'희망 진로·학과',h:'(선택)',ph:'예) 생명과학과, 바이오의약 연구원',v:''},
     {k:'next',l:'연계 제안 범위',t:'chips',full:true,o:['교과 세특','자율·자치활동','동아리활동','진로활동','독서'],v:'교과 세특, 자율·자치활동, 동아리활동, 진로활동',show:f=>!/면접/.test(f.mode)},
-    {k:'univ',l:'지원 대학·전형',h:'(선택)',ph:'예) 경북대 학생부종합(일반학생)',v:'',show:f=>/면접/.test(f.mode)},
-    {k:'style',l:'면접 방식',t:'select',o:['서류 확인형 (대부분의 학생부종합 면접)','제시문 기반 학업역량형','의약학 계열 인성·상황형 (MMI)'],v:'서류 확인형 (대부분의 학생부종합 면접)',show:f=>/면접/.test(f.mode)},
-    {k:'count',l:'질문 수',t:'select',o:['8개','12개','16개'],v:'8개',show:f=>/면접/.test(f.mode)},
-    {k:'focus',l:'중점 역량',t:'chips',full:true,o:['학업역량','진로역량','공동체역량','발전가능성','꼬리 질문 많이'],v:'학업역량, 진로역량, 공동체역량',show:f=>/면접/.test(f.mode)},
+    {k:'univ',l:'지원 대학·전형',t:'select',full:true,o:()=>UNIV.map(u=>u.n).concat(['직접 입력']),v:'정하지 않음 (일반 학생부종합)',show:f=>/면접/.test(f.mode),after:()=>{}},
+    {k:'univFree',l:'대학·전형 직접 입력',ph:'예) 영남대 학생부종합(일반학생)',v:'',show:f=>/면접/.test(f.mode) && f.univ==='직접 입력'},
+    {k:'dept',l:'지원 학과(모집단위)',ph:'예) 생명과학부, 간호학과',v:'',show:f=>/면접/.test(f.mode)},
+    {k:'field',l:'계열',h:'(과목 중요도)',t:'select',o:()=>Object.keys(FIELD),v:'자연',show:f=>/면접/.test(f.mode)},
+    {k:'style',l:'면접 방식',t:'select',o:['대학 방식 그대로 (추천)','서류 확인형','제시문 기반 학업역량형','의약학 인성·상황형 (MMI)'],v:'대학 방식 그대로 (추천)',show:f=>/면접/.test(f.mode)},
+    {k:'nA',l:'학업역량 문항',t:'select',o:['0','1','2','3','4','5','6','8'],v:'3',show:f=>/면접/.test(f.mode)},
+    {k:'nC',l:'진로역량 문항',t:'select',o:['0','1','2','3','4','5','6','8'],v:'3',show:f=>/면접/.test(f.mode)},
+    {k:'nM',l:'공동체역량 문항',t:'select',o:['0','1','2','3','4','5','6','8'],v:'2',show:f=>/면접/.test(f.mode)},
+    {k:'nG',l:'발전가능성·인성 문항',t:'select',o:['0','1','2','3','4'],v:'0',show:f=>/면접/.test(f.mode)},
+    {k:'nP',l:'제시문·상황 문항',h:'(대학 방식에 맞춰)',t:'select',o:['0','1','2','3'],v:'0',show:f=>/면접/.test(f.mode)},
+    {k:'tail',l:'꼬리 질문',h:'(문항마다)',t:'select',o:['1개','2개','3개'],v:'2개',show:f=>/면접/.test(f.mode)},
    ],
    build:f=>{
      const doc = sgState.text ? sgState.text : '(아직 생기부를 올리지 않았어요. 위 [생기부 올리기]에서 PDF를 올리면 개인정보를 가린 내용이 여기에 들어가요.)';
      const who = `${f.grade} 학생${f.major ? ` (희망 진로: ${f.major})` : ''}`;
      if (/면접/.test(f.mode)){
-       const n = parseInt(f.count) || 8;
+       const U = univOf(f), F = FIELD[f.field] || FIELD['자연'];
+       const cnt = { 학업역량:+f.nA||0, 진로역량:+f.nC||0, 공동체역량:+f.nM||0, '발전가능성·인성':+f.nG||0, '제시문·상황':+f.nP||0 };
+       const n = Object.values(cnt).reduce((a,b)=>a+b,0) || 8;
+       const tails = parseInt(f.tail) || 2;
+       const style = /그대로/.test(f.style) ? (U ? U.type : '서류 확인형') : f.style;
+       const ref = ivRef.text && $('#ivUse') && $('#ivUse').checked ? ivRef.pick(U ? U.key : (f.univFree||''), f.dept) : '';
        return `너는 대학 입학사정관이자 학생부종합전형 면접관이야. 아래 ${who}의 학교생활기록부(개인정보를 가린 것)를 읽고, 이 학생에게 실제로 나올 만한 학생부 기반 면접 질문을 만들어 줘.
 
-[면접 조건]
-- 지원 대학·전형: ${f.univ || '정하지 않음 (일반적인 학생부종합전형 기준)'}
-- 면접 방식: ${f.style}
-- 질문 수: ${n}개
-- 중점 역량: ${f.focus || '학업역량, 진로역량, 공동체역량'}
+[지원 정보]
+- 대학·전형: ${U ? U.n : (f.univFree || '정하지 않음 (일반적인 학생부종합전형)')}
+- 지원 학과: ${f.dept || f.major || '정하지 않음'} (${f.field} 계열)
+${U ? `- 이 전형의 면접 (2027 모집요강 기준, 매년 확인 필요): ${U.type} / ${U.time} / ${U.ratio}
+- 평가 초점: ${U.focus}
+- 출제 특징: ${U.tip}
+` : ''}- 이 계열에서 중요하게 보는 과목: ${F.subj} → 이 과목들의 세특을 우선 근거로 삼고, ${F.point}
+
+[문항 구성] 모두 ${n}개
+${Object.entries(cnt).filter(([k,v])=>v>0).map(([k,v])=>`- ${k}: ${v}개`).join('\n')}
+- 문항마다 꼬리 질문 ${tails}개
+- 면접 방식: ${style}
 
 [출제 규칙]
 - 모든 질문은 아래 생기부의 구체적 활동·문장에 근거할 것 (생기부에 없는 활동을 지어내지 말 것)
-- 활동 확인 질문(무엇을 했는지)보다 '왜·어떻게·무엇을 배웠는지·다음엔 어떻게'를 묻는 심층 질문 위주
-- 전공 관련 개념을 실제로 이해했는지 확인하는 질문을 포함
-- 지원 대학을 적었다면 그 대학이 공개한 면접 방식(선행학습 영향평가 보고서·전형 가이드북)을 참고하되, 확실하지 않은 대학별 사실은 쓰지 말 것
-${/MMI/.test(f.style) ? '- 의약학 계열 인성·상황 면접처럼 윤리적 딜레마·상황 판단 질문을 일부 포함\n' : ''}${/제시문/.test(f.style) ? '- 생기부 활동과 연결된 짧은 제시문(3~4문장)을 주고 묻는 질문을 일부 포함\n' : ''}
+- 활동 확인(무엇을 했는지)보다 '왜·어떻게·무엇을 배웠는지·다음엔 어떻게'를 묻는 심층 질문 위주
+- 지원 학과 전공 개념을 실제로 이해했는지 확인하는 질문 포함
+- 확실하지 않은 대학별 사실(배점·시간 등)은 새로 지어내지 말 것
+${cnt['제시문·상황'] ? `- 제시문·상황 문항은 생기부 활동과 연결된 짧은 제시문(3~5문장)이나 상황을 먼저 주고 묻기${/MMI|의약/.test(style + f.field) ? ' (의약학 계열은 윤리적 딜레마·상황 판단 포함)' : ''}\n` : ''}${ref ? `- 아래 [참고: 면접 후기·기출]의 질문 유형·깊이·말투를 따르되, 문항을 그대로 베끼지 말고 이 학생의 생기부에 맞게 바꿀 것\n` : ''}
 [출력 형식] 아래 형식만 그대로
 ### 이 학생 면접의 핵심 포인트
 - (3줄)
 ### 예상 질문
 **Q1. (질문)**
 - 근거: (생기부의 어느 학년·영역·활동)
-- 묻는 역량: (학업역량/진로역량/공동체역량/발전가능성)
-- 꼬리 질문: ① ... ② ...
+- 묻는 역량: (학업역량/진로역량/공동체역량/발전가능성·인성/제시문·상황)
+- 꼬리 질문: ${Array.from({length:tails},(_, i)=>'①②③'[i]+' ...').join(' ')}
 - 답변 포인트: (학생이 꼭 말해야 할 내용 2가지)
 (Q${n}까지 같은 형식)
 ### 확인 필요
 - (교사가 사실 확인할 점, 없으면 '없음')
-
+${ref ? `
+[참고: 면접 후기·기출 (교사가 올린 자료에서 이 대학·학과와 관련된 부분만 뽑음)]
+${ref}
+` : ''}
 [학교생활기록부]
 ${doc}`;
      }
@@ -1302,6 +1337,7 @@ function render(){
   $('#hwpCard').hidden = !(t.id==='tlp' || t.id==='plan');
   $('#planCard').hidden = t.id!=='plan';
   $('#sgCard').hidden = t.id!=='sgb';
+  $('#ivCard').hidden = !(t.id==='sgb' && /면접/.test(vals().mode||''));
   if (render._tab !== t.id){ if (render._tab) stashResult(render._tab); restoreResult(t.id); render._tab = t.id; }
   $('#toHwp').textContent = t.id==='plan' ? '평가 계획을 한글에 담기' : '이 주차를 한글 표에 담기';
   if (t.id==='plan') planFormLoad();
@@ -1310,6 +1346,7 @@ function render(){
 }
 
 function build(){
+  if (cur==='sgb' && ivRef.text && !build._iv){ build._iv = true; try{ const f = vals('sgb'), U = univOf(f), pk = ivRef.pick(U ? U.key : (f.univFree||''), f.dept); $('#ivPick').textContent = pk; }catch(e){} build._iv = false; }
   const p = task().build(vals());
   $('#prompt').value = p; updatePrompt();
   if ((cur==='tlp' || cur==='plan') && typeof renderBasket==='function') try{ renderBasket(); }catch(e){}
@@ -1913,10 +1950,92 @@ const SGB = (function(){
     if (grades) m.stats['성적 줄(제외)'] = grades;
     return Object.assign(m, { pages: opt.pages || 0, kept: sec.kept, dropped: sec.dropped, chars: m.text.length });
   }
+  // 참고 자료(면접 후기·기출) 글만 뽑기 — 가리기는 하지만 영역은 자르지 않음
+  async function extract(file){
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf'){ const pg = await pdfLines(new Uint8Array(await file.arrayBuffer())); return { text: dropRepeats(pg).join('\n'), pages: pg.length }; }
+    if (/\.(txt|text|md)$/i.test(file.name) || /^text\//.test(file.type)) return { text: await file.text(), pages: 0 };
+    throw new Error('PDF나 텍스트(.txt) 파일만 읽을 수 있어요.');
+  }
   function fromText(t, opt){ opt = Object.assign({ scan: t }, opt); return fromLines(t.split(/\r?\n/).map(l => l.trim()).filter(Boolean), opt); }
-  return { read, fromText, mask, pdfjs };
+  return { read, fromText, mask, pdfjs, extract };
 })();
 const SGB_END = 1;
+
+/* 대학별 학생부종합 면접 정보 — 2027학년도 모집요강·안내서와 보도 기준 (2026.11 확인). 매년 바뀌므로 각 대학 입학처에서 다시 확인 */
+const UNIV = [
+  { n:'정하지 않음 (일반 학생부종합)', key:'', none:true },
+  { n:'서울대 지역균형', key:'서울대', type:'서류 확인형 (제출서류 확인 + 기본 학업 소양)', time:'10분 내외, 1명 대상 복수 면접위원', ratio:'1단계 서류 100% → 2단계 1단계 70 + 면접 30', focus:'제출서류 내용 확인, 기본적인 학업 소양 (사범대는 교직적성·인성 포함, 의대는 상황·제시문+서류 60분)', tip:'생기부 활동의 개념적 이해를 깊게 확인하고 기본 학업 소양을 묻는 질문' },
+  { n:'서울대 일반전형', key:'서울대', type:'제시문 기반 면접 및 구술고사 (서류 참고 질문 가능)', time:'답변 준비 30~45분, 면접 15분 내외 (의대 상황·제시문+서류 60분, 수의대·치의학 MMI형)', ratio:'2단계 1단계 + 면접', focus:'전공 적성·학업 역량, 문제 해결력, 논리적·창의적 사고력', tip:'모집단위별 공동 출제 제시문(인문·사회는 지문, 자연·공학은 수학·과학 문제) + 제출서류 확인 질문' },
+  { n:'연세대 활동우수형', key:'연세대', type:'제시문 기반 면접 (현장 녹화)', time:'제시문 숙지 후 녹화 답변 (보도 기준 준비 8분·녹화 5분)', ratio:'2단계 면접 반영', focus:'논리적 사고력, 의사소통 능력 (의예과는 대면, 의학 인적성)', tip:'여러 제시문의 관점 비교·평가형 문항 (예: 제시문 [나]의 관점에서 [가]를 설명), 자연계도 과학사·과학철학형 제시문' },
+  { n:'고려대 계열적합', key:'고려대', type:'제시문 기반 면접 (필요하면 학생부 확인)', time:'준비 21분, 면접 7분 (의학과는 상황제시문 인·적성 8분 추가)', ratio:'1단계 60 + 면접 40', focus:'분석력 20%, 적용력 30%, 종합적 사고력 40%, 면접 태도 10%', tip:'계열 관련 제시문 분석·적용·종합 질문, 학업우수전형은 면접 없음' },
+  { n:'성균관대 성균인재', key:'성균관대', type:'인·적성 면접 (서류 기반)', time:'요강에 시간 미기재', ratio:'1단계 학생부 100% → 2단계 학생부 70 + 면접 30', focus:'인성·적성, 지원 동기와 전공 적합성 (의예과는 단계별 인·적성 평가 가능)', tip:'생기부 기반 인성·적성 질문, 사범대는 교직 적성' },
+  { n:'성균관대 과학인재', key:'성균관대', type:'제시문 기반 수학/과학 교과형 면접', time:'요강에 시간 미기재', ratio:'학생부 70 + 면접 30', focus:'수학·과학 개념 이해와 적용', tip:'고교 수학·과학 개념을 묻는 제시문 문제 풀이형' },
+  { n:'중앙대 탐구형인재', key:'중앙대', type:'서류 기반 개인별 심층면접', time:'10분 이내 (보도 기준)', ratio:'1단계 서류 100% → 2단계 서류 70 + 면접 30', focus:'학업 준비도, 계열 분야 탐구역량', tip:'세특·탐구 활동의 과정과 개념을 깊게 파고드는 심층 질문' },
+  { n:'중앙대 성장형인재', key:'중앙대', type:'서류 기반 개인별 면접', time:'10분 이내 (보도 기준)', ratio:'서류 70 + 면접 30', focus:'학교생활 충실도, 학업 준비도, 의사소통·인성', tip:'학교생활 전반의 성장 과정과 공동체 경험 질문' },
+  { n:'중앙대 융합형인재 (의학부)', key:'중앙대', type:'서류 기반 개인별 심층면접', time:'요강에 시간 미기재', ratio:'서류 70 + 면접 30 (의학부만 면접)', focus:'학업 준비도, 학교생활 충실도, 인성 및 의사소통능력', tip:'의학 전공 적성·인성과 생기부 활동 심층 질문' },
+  { n:'부산대 학생부종합', key:'부산대', type:'서류 기반 면접 (공통문제 없음, 의예과는 공통문제 추가)', time:'약 10분 (의예과: 공통문제 준비 10분 + 답변 10분 + 서류 10분)', ratio:'1단계 80 + 면접 20', focus:'탐구역량(수업·발표 계기, 모둠 역할, 실험의 어려움, 보고서 핵심), 사회역량(학급 역할, 동아리 갈등 해결)', tip:'활동마다 계기→역할→과정→결과를 묻는 질문, 블라인드 면접' },
+  { n:'경북대 학생부종합 (단계별)', key:'경북대', type:'서류 기반 면접', time:'요강에서 확인 (보도에 시간 미기재)', ratio:'1단계 서류 → 2단계 서류 70 + 면접 30 (일괄합산 전형은 면접 없음, 모바일과학인재 50:50)', focus:'제출서류 내용 확인, 전공 적합성, 인성', tip:'생기부 활동의 사실 확인과 전공 관련 심화 질문' },
+  { n:'국민대 국민프런티어', key:'국민대', type:'생기부 확인형', time:'10분 이내, 입학사정관 2인', ratio:'2단계 면접 30', focus:'수험생별 맞춤 질문', tip:'블라인드, 학생부 기반 개별 질문' },
+  { n:'성신여대 자기주도인재', key:'성신여대', type:'생기부 확인형 (사실 확인)', time:'약 10분, 입학사정관 2인', ratio:'2단계 면접 40', focus:'진로역량 50%, 학업역량 30%, 공동체역량 20%', tip:'자기소개 없음, 생기부 밖 질문 없음, 진로 변화 계기 질문이 많음' },
+  { n:'경기대 KGU학생부종합', key:'경기대', type:'생기부 확인형', time:'약 10분, 면접위원 2인', ratio:'2단계 면접 반영', focus:'세특·탐구 활동 확인 (교과 지식은 묻지 않음)', tip:'탐구 활동 결과와 분석 방법을 묻고 꼬리 질문으로 이어짐' },
+  { n:'서울과기대 학교생활우수자', key:'서울과기대', type:'생기부 확인형', time:'10분 내외, 2인', ratio:'2단계 면접 30', focus:'제출서류 기반 개별면접', tip:'블라인드, 생기부 활동 확인' },
+  { n:'강원대 미래인재면접', key:'강원대', type:'생기부 확인형 (제시문 없음)', time:'10분 내외, 입학사정관 2인', ratio:'2단계 면접 40', focus:'생기부 확인', tip:'블라인드, 생기부 활동의 사실·이해 확인' },
+  { n:'의약학 계열 MMI (일반)', key:'의', type:'다중미니면접(MMI) 인성·상황형 + 서류 확인', time:'대학마다 다름 (방마다 약 8~10분)', ratio:'대학마다 다름', focus:'의료인 자질, 윤리적 판단, 의사소통, 공감', tip:'윤리적 딜레마·상황 제시 후 판단 근거를 묻고 꼬리 질문, 생기부 의학 관련 활동 확인' },
+];
+const univOf = f => { const u = UNIV.find(x => x.n === f.univ); return u && !u.none ? u : null; };
+/* 계열별로 중요하게 보는 과목 (면접 질문의 근거 우선순위) */
+const FIELD = {
+  '인문': { subj:'국어, 영어, 사회(역사·윤리 포함), 제2외국어', point:'텍스트 해석·논증·가치 판단을 묻기' },
+  '사회·상경': { subj:'수학(확률과 통계 등), 사회(경제·정치와 법·사회문화), 영어', point:'데이터 해석·사회 현상 분석을 묻기' },
+  '자연': { subj:'수학, 과학(지원 학과에 맞는 물리·화학·생명과학·지구과학)', point:'과학 개념의 원리와 탐구 설계를 묻기' },
+  '공학': { subj:'수학(미적분·기하), 물리학, 정보', point:'수학·물리 개념의 적용과 문제 해결 과정을 묻기' },
+  '의약·보건': { subj:'생명과학, 화학, 수학', point:'생명과학·화학 개념 이해와 의료 윤리·인성을 함께 묻기' },
+  '교육': { subj:'지원 교과(국·수·영·사·과 등)와 교육 관련 활동', point:'교과 이해와 교직 적성·인성을 묻기' },
+  '예체능·기타': { subj:'지원 분야 관련 교과와 활동', point:'전공 관련 경험과 성장 과정을 묻기' },
+};
+/* 면접 후기·기출 참고 자료 (선택) — 대학·학과와 관련된 부분만 골라 보냄 */
+const ivRef = { text:'', files:[],
+  pick(key, dept){
+    const LIM = 7000;
+    const chunks = []; let buf = '';
+    this.text.split(/\n/).forEach(l => { buf += l + '\n'; if (buf.length > 500 || /^\s*$/.test(l)){ if (buf.trim()) chunks.push(buf.trim()); buf = ''; } });
+    if (buf.trim()) chunks.push(buf.trim());
+    const dk = (dept||'').replace(/(학과|학부|전공|계열|과)$/,'').split(/[\s·,/]+/).filter(w => w.length >= 2);
+    const keys = key ? [key].concat(key === '의' ? ['의예','의대','의학','MMI','다중미니'] : [key.replace(/대$/,'')]) : [];
+    const score = c => (keys.some(k => k && c.includes(k)) ? 5 : 0) + (dk.some(k => c.includes(k)) ? 3 : 0) + ((c.match(/\?|질문|물어|꼬리/g) || []).length ? 1 : 0);
+    let picked = chunks.map((c, i) => ({ c, i, s: score(c) })).filter(x => x.s > (keys.length || dk.length ? 1 : 0)).sort((a, b) => b.s - a.s || a.i - b.i);
+    if (!picked.length) picked = chunks.map((c, i) => ({ c, i, s: 0 })).filter(x => /\?|질문/.test(x.c));
+    let out = [], len = 0;
+    for (const x of picked){ if (len + x.c.length > LIM) continue; out.push(x); len += x.c.length; }
+    out.sort((a, b) => a.i - b.i);
+    return out.map(x => x.c).join('\n---\n');
+  } };
+function ivShow(){
+  const has = !!ivRef.text;
+  $('#ivClear').hidden = !has; $('#ivPrev').hidden = !has;
+  if (has){
+    const f = vals('sgb'), U = univOf(f), pk = ivRef.pick(U ? U.key : (f.univFree||''), f.dept);
+    $('#ivPick').textContent = pk || '(고른 대학·학과와 맞는 부분을 찾지 못했어요. 질문이 들어 있는 부분을 대신 보내요.)';
+    $('#ivStatus').className = 'status';
+    $('#ivStatus').textContent = `✓ ${ivRef.files.join(', ')} · 전체 ${ivRef.text.length.toLocaleString()}자 중 ${pk.length.toLocaleString()}자를 고른 대학·학과에 맞춰 함께 보내요.`;
+  }
+  build();
+}
+async function ivLoad(files){
+  $('#ivStatus').className = 'status'; $('#ivStatus').textContent = '이 브라우저 안에서 읽는 중…';
+  try{
+    for (const file of files){ const r = await SGB.extract(file); const m = SGB.mask(r.text, [], r.text); ivRef.text += (ivRef.text ? '\n\n' : '') + m.text; ivRef.files.push(file.name); }
+    $('#ivUse').checked = true; ivShow();
+  }catch(e){ $('#ivStatus').className = 'status err'; $('#ivStatus').textContent = (e && e.message) || '파일을 읽지 못했어요.'; }
+}
+$('#ivFile').addEventListener('change', e=>{ const fs = [...e.target.files]; e.target.value = ''; if (fs.length) ivLoad(fs); });
+$('label[for="ivFile"]').addEventListener('keydown', e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#ivFile').click(); } });
+['dragenter','dragover'].forEach(t=>$('#ivDrop').addEventListener(t, e=>{ e.preventDefault(); $('#ivDrop').classList.add('over'); }));
+['dragleave','dragend'].forEach(t=>$('#ivDrop').addEventListener(t, e=>{ if (!$('#ivDrop').contains(e.relatedTarget)) $('#ivDrop').classList.remove('over'); }));
+$('#ivDrop').addEventListener('drop', e=>{ e.preventDefault(); $('#ivDrop').classList.remove('over'); const fs = e.dataTransfer ? [...e.dataTransfer.files] : []; if (fs.length) ivLoad(fs); });
+$('#ivUse').addEventListener('change', build);
+$('#ivClear').addEventListener('click', ()=>{ ivRef.text = ''; ivRef.files = []; $('#ivStatus').textContent = '올린 자료를 모두 뺐어요.'; ivShow(); });
+
 /* ---------- 생기부 분석·면접 (화면) ---------- */
 const sgState = { text:'', info:null };
 function sgShow(r){
