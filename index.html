@@ -162,6 +162,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 #sgText,#sgPaste{width:100%;min-height:220px;font:inherit;font-size:13.5px;line-height:1.6;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--sheet);color:var(--ink);resize:vertical;box-sizing:border-box}
 .sg-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .sg-tags span{font-size:12.5px;border:1px solid var(--soft-line);border-radius:999px;padding:2px 9px;background:var(--sheet)}
+.sg-pick{margin:10px 0 4px;border:1px solid var(--soft-line);border-radius:10px;padding:8px 12px;background:var(--sheet)}
+.sg-pick summary{cursor:pointer;font-weight:700;font-size:14px}
+.sg-pick-row{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;align-items:start;margin-top:10px;font-size:13.5px}
+.sg-pick-row > span{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.sg-pick-row label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+.sg-pick-row label.lock{color:var(--muted);cursor:not-allowed}
+@media (max-width:560px){.sg-pick-row{grid-template-columns:1fr}}
+.sg-name{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:#111;color:#fff;cursor:pointer}
+.sg-name.off{background:var(--sheet);color:var(--ink);text-decoration:line-through}
 .sg-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 8px}
 .sg-tabs button{font:inherit;font-size:13.5px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--sheet);color:var(--ink);cursor:pointer}
 .sg-tabs button[aria-selected=true]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
@@ -298,15 +307,21 @@ mark.typo{background:transparent;color:inherit;text-decoration:underline wavy va
   <section class="card" id="sgCard" hidden>
     <span class="label">생기부 올리기</span>
     <div class="sec-h" style="margin-top:14px"><h2 style="margin:0">학교생활기록부 올리기</h2><span class="hint">🔒 이 브라우저 안에서만 처리</span></div>
-    <p class="lead">파일은 이 브라우저 안에서만 읽어요. 서버로 올리거나 저장하지 않고, 새로고침하면 사라져요. 이름·학교명·연락처·주민번호·주소를 가리고, 인적·학적사항·출결·학교폭력 부분은 빼요. AI에는 <b>바로 만들기</b>를 누를 때 아래 '가린 내용'만 보내요.</p>
+    <p class="lead">파일은 이 브라우저 안에서만 읽어요. 서버로 올리거나 저장하지 않고, 새로고침하면 사라져요. 이름·학교명·연락처·주민번호·주소를 가리고, 인적·학적사항·학교폭력 부분은 늘 빼요. 무엇을 가리고 어느 영역을 보낼지는 아래에서 고를 수 있어요. AI에는 <b>바로 만들기</b>를 누를 때 아래 '가린 내용'만 보내요.</p>
     <div class="drop" id="sgDrop">
       <p><b>생기부 PDF</b>(또는 .txt)를 여기로 끌어다 놓거나 버튼을 눌러 고르세요.</p>
       <div class="row"><label class="btn" for="sgFile" role="button" tabindex="0">파일 고르기</label><input type="file" id="sgFile" accept=".pdf,.txt,application/pdf,text/plain" hidden><button class="btn sm" type="button" id="sgPasteBtn">직접 붙여넣기</button><button class="btn sm" type="button" id="sgClear" hidden>지우기</button></div>
     </div>
     <div class="sg-opts">
       <label class="hint">추가로 가릴 이름 <input type="text" id="sgNames" placeholder="예) 친구·교사 이름 (쉼표로 구분)" autocomplete="off"></label>
-      <label class="hint" style="cursor:pointer"><input type="checkbox" id="sgGrades" checked> 성적(원점수·등급) 줄 빼기</label>
     </div>
+    <details class="sg-pick" open>
+      <summary>가릴 것·보낼 것 고르기</summary>
+      <div class="sg-pick-row"><b>가릴 항목</b><span id="sgKinds"></span></div>
+      <div class="sg-pick-row"><b>AI에 보낼 영역</b><span id="sgSecs"></span></div>
+      <div class="sg-pick-row"><b>성적</b><span><label><input type="checkbox" id="sgGrades"> 성적(원점수·등급) 줄 빼기</label><span class="hint"> — 기본은 함께 보내요. 이름이 가려져 누구의 성적인지 알 수 없고, 성적에 따라 묻는 내용이 달라질 수 있어요.</span></span></div>
+      <div class="sg-pick-row" id="sgFoundRow" hidden><b>찾은 이름</b><span><span id="sgFound"></span><span class="hint" style="display:block;margin-top:4px">이름이 아닌데 잘못 가려졌으면 눌러서 '안 가림'으로 바꾸세요.</span></span></div>
+    </details>
     <textarea id="sgPaste" hidden placeholder="생기부 내용을 붙여넣고 [가리기]를 누르세요." spellcheck="false"></textarea>
     <div class="row" id="sgPasteRow" hidden style="margin-top:8px"><button class="btn primary sm" type="button" id="sgPasteGo">가리기</button></div>
     <p class="status" id="sgStatus" role="status" aria-live="polite"></p>
@@ -1252,7 +1267,7 @@ ${plan ? `- 보충지도: ${f.hours}, 운영 방식: ${f.how || '학교 여건�
     {k:'mode',l:'무엇을 할까요',t:'select',full:true,o:['생기부 요약·상담 피드백','학생부 기반 면접 예상 질문'],v:'생기부 요약·상담 피드백',after:()=>{}},
     {k:'grade',l:'현재 학년',t:'select',o:['1학년','2학년','3학년'],v:'2학년'},
     {k:'major',l:'희망 진로·학과',h:'(선택)',ph:'예) 생명과학과, 바이오의약 연구원',v:''},
-    {k:'next',l:'연계 제안 범위',t:'chips',full:true,o:['교과 세특','자율·자치활동','동아리활동','진로활동','독서'],v:'교과 세특, 자율·자치활동, 동아리활동, 진로활동',show:f=>!/면접/.test(f.mode)},
+    {k:'next',l:'연계 제안 범위',t:'chips',full:true,o:['교과 세특','자율·자치활동','동아리활동','진로활동','행동특성 및 종합의견','독서'],v:'교과 세특, 자율·자치활동, 동아리활동, 진로활동, 행동특성 및 종합의견',show:f=>!/면접/.test(f.mode)},
     {k:'univ',l:'지원 대학·전형',t:'select',full:true,o:()=>UNIV.map(u=>u.g ? '#'+u.g : u.n).concat(['#그 밖의 대학','직접 입력']),v:'정하지 않음 (일반 학생부종합)',show:f=>/면접/.test(f.mode),after:()=>{}},
     {k:'univFree',l:'대학·전형 직접 입력',ph:'예) 영남대 학생부종합(일반학생)',v:'',show:f=>/면접/.test(f.mode) && f.univ==='직접 입력'},
     {k:'dept',l:'지원 학과(모집단위)',ph:'예) 생명과학부, 간호학과',v:'',show:f=>/면접/.test(f.mode)},
@@ -1323,7 +1338,7 @@ ${doc}`;
 - 평가는 학업역량, 진로역량, 공동체역량(대학 공동연구 평가요소) 기준
 - 연계 활동 제안 범위: ${f.next || '교과 세특, 창의적 체험활동'}
 - 제안은 학교 안에서 실제로 할 수 있는 것(수업 탐구, 동아리, 자율·진로 활동, 독서)으로, 다음 학년에 바로 이어질 수 있게
-
+${/행동특성/.test(f.next || '') ? `- 행동특성 및 종합의견 연계: 지금 행특에 드러난 인성·태도(배려, 협력, 성실, 리더십, 자기주도성 등)와 아직 드러나지 않은 면을 짚고, 학급·학교생활에서 담임교사가 관찰해 행특에 기록할 수 있는 구체적인 행동(학급 역할, 또래 돕기, 공동체 규칙·약속 실천 등)을 제안에 1~2개 포함할 것. 이런 제안의 '기록될 곳'은 '행동특성 및 종합의견'으로 적을 것\n` : ''}
 [출력 형식]
 ### 한눈에 보기
 - (학생의 탐구 흐름과 강점을 3줄로)
@@ -1335,11 +1350,11 @@ ${doc}`;
 |---|---|---|---|
 ### 행동특성 및 종합의견 요약
 - (학년별 1줄)
-### 역량 진단
+${/행동특성/.test(f.next || '') ? '- 다음 학년 행특에서 더 보여 주면 좋을 모습: (1~2줄)\n' : ''}### 역량 진단
 | 역량 | 강점 (근거) | 보완할 점 |
 |---|---|---|
 ### 연계 활동·탐구 주제 제안
-1. **(주제)** — 연결 근거: (생기부의 어느 활동) / 할 일: (구체적으로) / 기록될 곳: (과목 세특·동아리 등)
+1. **(주제)** — 연결 근거: (생기부의 어느 활동) / 할 일: (구체적으로) / 기록될 곳: (과목 세특·동아리·진로·행특 등)
 (5개)
 ### 상담 때 물어볼 질문
 - (3개)
@@ -2046,9 +2061,11 @@ const SGB = (function(){
     ['행동특성 및 종합의견', /행동\s*특성\s*및\s*종합\s*의견/, true],
   ];
   // 대입에 쓰는 부분(창체·교과 세특·행특)만 남기기. rows: [{text, st?}] → 각 줄에 st 표시
-  function pickSections(rows){
+  const LOCKED = new Set(['인적·학적사항','학교폭력 조치상황']);   // 늘 보내지 않음
+  function pickSections(rows, send){
+    const keepOf = (n, k) => LOCKED.has(n) ? false : send ? send.includes(n) : k;
     const marks = [];
-    rows.forEach((r, i) => { if (r.st === 'head' || r.text.length > 40) return; SECTIONS.forEach(([n, re, keep]) => { if (re.test(r.text) && /^\s*(\d+\s*[.)]?\s*)?[가-힣]/.test(r.text)) marks.push({ i, n, keep }); }); });
+    rows.forEach((r, i) => { if (r.st === 'head' || r.text.length > 40) return; SECTIONS.forEach(([n, re, keep]) => { if (re.test(r.text) && /^\s*(\d+\s*[.)]?\s*)?[가-힣]/.test(r.text)) marks.push({ i, n, keep: keepOf(n, keep) }); }); });
     const kept = [], dropped = [];
     if (!marks.length){ rows.forEach(r => { if (r.st !== 'head') r.st = 'sent'; }); return { kept, dropped }; }
     rows.slice(0, marks[0].i).forEach(r => { if (r.st !== 'head') r.st = 'drop:맨 앞부분'; });
@@ -2066,17 +2083,27 @@ const SGB = (function(){
 
   const NOT_NAME = new Set(['학생','담임','교사','교과','진로','지도','담당','동아리','자율','상담','선생','교장','교감','부장','학년','성별','주소','성명','학교','교수','연구','과학','수학','국어','영어']);
   // 개인정보 가리기 — 조각(segs)으로 나눠 무엇을 무엇으로 바꿨는지 기억
-  function mask(text, extraNames, scan){
+  // 이름처럼 보이는지: 흔한 성으로 시작하고, 조사·복수형으로 끝나지 않을 것 (예: '친구들과 선생님'의 '구들과'는 이름 아님)
+  const SURNAME = '김이박최정강조윤장임한오서신권황안송류유전홍고문양손배백허남심노하곽성차주우구민진나지엄채원천방공현함변염여추도소석선설마길연위표명기반왕금옥육인맹제모탁국어은편용예봉경사부';
+  const looksName = n => n.length >= 2 && n.length <= 4 && SURNAME.includes(n[0]) && !NOT_NAME.has(n) && !/[과와의에께들은는을를도만로며고]$/.test(n) && !/들|님|께/.test(n);
+  function mask(text, extraNames, scan, opt){
+    opt = opt || {};
+    const on = k => !opt.kinds || opt.kinds.includes(k);
+    const skip = new Set(opt.skip || []);
     const stats = {}; const add = (k, n) => { if (n) stats[k] = (stats[k] || 0) + n; };
     const names = new Set(), teachers = new Set();
     const src = (scan || '') + '\n' + text;   // 이름은 지운 부분(인적사항·머리말)까지 포함해 찾음
     src.replace(/성\s*명\s*[:：]?\s*([가-힣]{2,4})(?=\s|$|[^가-힣])/g, (m, n) => { if (!NOT_NAME.has(n)) names.add(n); return m; });
-    src.replace(/(?:담임\s*(?:교사)?|지도\s*교사|교사|교사명)\s*[:：]?\s*([가-힣]{2,4})\s*(?=선생님|교사|\s|$|[,.)])/g, (m, n) => { if (!NOT_NAME.has(n) && n.length >= 3) teachers.add(n); return m; });
-    src.replace(/([가-힣]{3})\s*선생님/g, (m, n) => { if (!NOT_NAME.has(n) && !/^(담임|교과|진로)/.test(n)) teachers.add(n); return m; });
+    src.replace(/(?:담임\s*(?:교사)?|지도\s*교사|교사명?)\s*[:：]\s*([가-힣]{2,4})(?![가-힣])/g, (m, n) => { if (looksName(n) && n.length >= 3) teachers.add(n); return m; });
+    src.replace(/(?:담임|지도)\s*교사\s+([가-힣]{3})(?=\s*(?:선생님|$|[,.)\s]))/g, (m, n) => { if (looksName(n)) teachers.add(n); return m; });
+    src.replace(/(?<![가-힣])([가-힣]{3})\s*선생님/g, (m, n) => { if (looksName(n) && !/^(담임|교과|진로)/.test(n)) teachers.add(n); return m; });
     (extraNames || []).forEach(n => { n = n.trim(); if (n.length >= 2) names.add(n); });
+    const found = { names: [...names], teachers: [...teachers] };
+    skip.forEach(n => { names.delete(n); teachers.delete(n); });
     const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     let segs = [{ t: text }];
     const sub = (re, rep, k) => {
+      if (!on(k === '이메일' ? '전화번호' : k)) return;
       let n = 0; const out = [];
       segs.forEach(sg => {
         if (sg.o != null){ out.push(sg); return; }
@@ -2103,13 +2130,14 @@ const SGB = (function(){
       sub(new RegExp(esc(n), 'g'), '학생', '학생 이름');
       if (n.length === 3){   // 성을 뺀 이름 + 조사 (예: 하늘이는)
         const g = n.slice(1);
-        sub(new RegExp(esc(g) + '이?(?=(는|가|의|를|와|에게|도)(?![가-힣]))', 'g'), '학생', '학생 이름');
+        const PJ = { '는':'은', '가':'이', '를':'을', '와':'과' };
+        sub(new RegExp(esc(g) + '이?(는|가|의|를|와|에게|도)(?![가-힣])', 'g'), (m, p) => '학생' + (PJ[p] || p), '학생 이름');
       }
     });
     [...teachers].forEach(n => sub(new RegExp(esc(n), 'g'), '교사', '교사 이름'));
     // 원래 글에서의 위치
     let off = 0; segs.forEach(sg => { sg.at = off; off += (sg.o != null ? sg.o : sg.t).length; });
-    return { text: segs.map(sg => sg.t).join(''), segs, stats, names: [...names], teachers: [...teachers] };
+    return { text: segs.map(sg => sg.t).join(''), segs, stats, names: [...names], teachers: [...teachers], found };
   }
   // 파일 → 가린 글 (+ PDF면 원본 모양 위에 표시할 정보)
   async function read(file, opt){
@@ -2127,11 +2155,11 @@ const SGB = (function(){
   }
   function fromRows(rows, opt){
     opt = opt || {};
-    const sec = pickSections(rows);
+    const sec = pickSections(rows, opt.send);
     let grades = 0, inGrade = false;
     rows.forEach(r => {
       if (r.st === 'heading') inGrade = r.sec === '교과학습발달상황';
-      if (opt.dropGrades !== false && inGrade && r.st === 'sent' && isGradeLine(r.text) && !/세부\s*능력/.test(r.text)){ r.st = 'grade'; grades++; }
+      if (opt.dropGrades === true && inGrade && r.st === 'sent' && isGradeLine(r.text) && !/세부\s*능력/.test(r.text)){ r.st = 'grade'; grades++; }
     });
     // 보낼 글: 영역 제목은 [이름]으로, 내용 줄은 그대로
     const sent = []; let off = 0;
@@ -2140,7 +2168,7 @@ const SGB = (function(){
       else if (r.st === 'sent'){ sent.push(r.text); r.at = off; off += r.text.length + 1; }
     });
     const raw = sent.join('\n');
-    const m = mask(raw, opt.names, opt.scan);
+    const m = mask(raw, opt.names, opt.scan, opt);
     if (grades) m.stats['성적 줄(제외)'] = grades;
     // 가린 조각 → 줄·글자 위치
     const boxes = [];
@@ -2189,7 +2217,7 @@ const SGB = (function(){
     });
     return wrap;
   }
-  return { read, fromText, mask, pdfjs, extract, drawPage };
+  return { read, fromText, mask, pdfjs, extract, drawPage, SECTIONS: SECTIONS.map(x => ({ n: x[0], keep: x[2], locked: LOCKED.has(x[0]) })) };
 
 })();
 const SGB_END = 1;
@@ -2308,7 +2336,7 @@ const sgState = { text:'', info:null };
 function sgShow(r){
   sgState.info = r; sgState.text = r.text;
   $('#sgOut').hidden = false; $('#sgText').value = r.text; $('#sgClear').hidden = false;
-  sgViews(r);
+  sgViews(r); sgFound(r);
   const st = Object.entries(r.stats).map(([k,v])=>`${k} ${v}`);
   const parts = [];
   if (r.pages) parts.push(`${r.pages}쪽 읽음`);
@@ -2370,11 +2398,26 @@ function sgViews(r){
   $('#sgTabPage').hidden = !r.pdf;
   $('#sgMarked').innerHTML = sgForm(r);
   sgState.drawn = false; $('#sgPages').innerHTML = '';
-  sgView(r.pdf ? 'page' : 'form');
+  sgView(sgState.view && sgState.view !== 'page' ? sgState.view : (r.pdf ? 'page' : 'form'));
 }
 document.querySelectorAll('.sg-tabs button').forEach(b => b.addEventListener('click', () => sgView(b.dataset.v)));
 $('#sgPeek').addEventListener('change', e => { $('#sgPages').classList.toggle('sg-peek', e.target.checked); $('#sgMarked').classList.toggle('sg-peekon', e.target.checked); });
-function sgOpts(){ return { names: $('#sgNames').value.split(/[,，\n]/).map(x=>x.trim()).filter(Boolean), dropGrades: $('#sgGrades').checked }; }
+const SG_KINDS = [['학생 이름','학생 이름'],['교사 이름','교사 이름'],['학교명','학교명'],['학년·반·번호','학년·반·번호'],['전화번호','전화번호·이메일'],['주소','주소'],['주민등록번호','주민등록번호']];
+$('#sgKinds').innerHTML = SG_KINDS.map(([k,l])=>`<label><input type="checkbox" data-kind="${esc(k)}" checked> ${esc(l)}</label>`).join('');
+$('#sgSecs').innerHTML = SGB.SECTIONS.map(x=>x.locked ? `<label class="lock" title="민감한 정보라 늘 빼요"><input type="checkbox" disabled> ${esc(x.n)} (늘 뺌)</label>` : `<label><input type="checkbox" data-sec="${esc(x.n)}"${x.keep ? ' checked' : ''}> ${esc(x.n)}</label>`).join('');
+function sgOpts(){ return { names: $('#sgNames').value.split(/[,，\n]/).map(x=>x.trim()).filter(Boolean), dropGrades: $('#sgGrades').checked,
+  kinds: [...document.querySelectorAll('#sgKinds input:checked')].map(x=>x.dataset.kind),
+  send: [...document.querySelectorAll('#sgSecs input[data-sec]:checked')].map(x=>x.dataset.sec),
+  skip: [...(sgState.skip || [])] }; }
+function sgRerun(){ if (sgState.file) sgLoad(sgState.file); else if (sgState.paste) sgShow(SGB.fromText(sgState.paste, sgOpts())); }
+function sgFound(r){
+  const f = r.found || { names:[], teachers:[] }, skip = sgState.skip || (sgState.skip = new Set());
+  const list = f.names.map(n=>[n,'학생']).concat(f.teachers.map(n=>[n,'교사']));
+  $('#sgFoundRow').hidden = !list.length;
+  $('#sgFound').innerHTML = list.map(([n,w])=>`<button type="button" class="sg-name${skip.has(n)?' off':''}" data-n="${esc(n)}" title="${skip.has(n)?'누르면 다시 가려요':'누르면 가리지 않아요'}">${esc(n)} · ${skip.has(n)?'안 가림':w+' 이름'}</button>`).join(' ');
+}
+$('#sgFound').addEventListener('click', e=>{ const b = e.target.closest('.sg-name'); if (!b) return; const skip = sgState.skip || (sgState.skip = new Set()); const n = b.dataset.n; skip.has(n) ? skip.delete(n) : skip.add(n); sgRerun(); });
+$('#sgKinds').addEventListener('change', sgRerun); $('#sgSecs').addEventListener('change', sgRerun);
 async function sgLoad(file){
   $('#sgStatus').className = 'status'; $('#sgStatus').textContent = '이 브라우저 안에서 읽고 가리는 중…';
   try{ sgState.file = file; sgShow(await SGB.read(file, sgOpts())); }
@@ -2388,8 +2431,8 @@ $('#sgDrop').addEventListener('drop', e=>{ e.preventDefault(); $('#sgDrop').clas
 $('#sgPasteBtn').addEventListener('click', ()=>{ const h = !$('#sgPaste').hidden; $('#sgPaste').hidden = h; $('#sgPasteRow').hidden = h; if (!h) $('#sgPaste').focus(); });
 $('#sgPasteGo').addEventListener('click', ()=>{ const t = $('#sgPaste').value; if (!t.trim()){ toast('붙여넣은 내용이 없어요.'); return; } sgState.file = null; sgState.paste = t; sgShow(SGB.fromText(t, sgOpts())); $('#sgPaste').value = ''; $('#sgPaste').hidden = true; $('#sgPasteRow').hidden = true; });
 $('#sgText').addEventListener('input', ()=>{ sgState.text = $('#sgText').value; build(); });
-[$('#sgNames'), $('#sgGrades')].forEach(el=>el.addEventListener('change', ()=>{ if (sgState.file) sgLoad(sgState.file); else if (sgState.paste) sgShow(SGB.fromText(sgState.paste, sgOpts())); }));
-$('#sgClear').addEventListener('click', ()=>{ sgDrawTok++; $('#sgPages').innerHTML = ''; $('#sgMarked').innerHTML = ''; Object.assign(sgState, { text:'', info:null, file:null, paste:'' }); $('#sgText').value = ''; $('#sgOut').hidden = true; $('#sgClear').hidden = true; $('#sgStatus').textContent = '지웠어요.'; build(); });
+[$('#sgNames'), $('#sgGrades')].forEach(el=>el.addEventListener('change', sgRerun));
+$('#sgClear').addEventListener('click', ()=>{ sgDrawTok++; $('#sgPages').innerHTML = ''; $('#sgMarked').innerHTML = ''; Object.assign(sgState, { text:'', info:null, file:null, paste:'', skip:new Set() }); $('#sgFoundRow').hidden = true; $('#sgText').value = ''; $('#sgOut').hidden = true; $('#sgClear').hidden = true; $('#sgStatus').textContent = '지웠어요.'; build(); });
 function renderSgb(text, truncated){
   if (!/면접/.test(vals('sgb').mode)) return;
   const qs = []; const re = /\*\*Q(\d+)\.\s*([\s\S]+?)\*\*/g; let m;
